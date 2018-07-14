@@ -51,13 +51,13 @@ namespace ColumnStore
         static Database db = new Database();
         static void Main(string[] args)
         {
-            BuildDatabase();
-            Console.WriteLine(db.Tables[0].Columns.Count);
+            var employee = BuildEmployeeTable();
+            Console.WriteLine(employee.Columns.Count);
             Console.ReadKey();
         }
 
 
-        static void BuildDatabase()
+        static Table BuildEmployeeTable()
         {
             var table = new Table("employees");
             db.Tables.Add(table);
@@ -74,6 +74,7 @@ namespace ColumnStore
             table.Columns[1].Values.Add(3, "kerala");
             table.Columns[1].Values.Add(4, "mumbai");
 
+            return table;
         }
 
     }
