@@ -1,12 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Globalization;
 
 namespace ColumnStore
 {
     class Database
     {
         public List<Table> Tables { get; set; }
+        public Database()
+        {
+            this.Tables = new List<Table>();
+        }
     }
+
     class Table {
 
         public Table(string name)
@@ -17,69 +24,57 @@ namespace ColumnStore
         public List<Column> Columns { get; set; }
         public string Name { get; set; }
     }
+
     class Column {
-        public int Key { get; set; }
         public string Name { get; set; }
-        public string Value { get; set; }
+        public Dictionary<int,string> Values { get; set; }
+
+        public Column()
+        {
+            this.Values = new Dictionary<int, string>();
+        }
+
+        public Column(string Name) : this() 
+        {
+            this.Name = Name;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0}", Values.ToString());
+        }
     }
 
 
     class Program
     {
-        static List<Dictionary<string, string>> data = new List<Dictionary<string,string>>();
         static Database db = new Database();
         static void Main(string[] args)
         {
-            InitializeData();
-
-            BuildDatabase(data);
+            BuildDatabase();
+            Console.WriteLine(db.Tables[0].Columns.Count);
             Console.ReadKey();
-
         }
 
-        static void BuildDatabase(List<Dictionary<string, string>> d)
+
+        static void BuildDatabase()
         {
             var table = new Table("employees");
+            db.Tables.Add(table);
+            table.Columns.Add(new Column("name"));
+            table.Columns.Add(new Column("city"));
 
-            int key = 1;
-            foreach(var row in d)
-            {
-                Console.WriteLine(row["name"]);
-                var column = new Column();
-                column.Key = key;
-                column.Name = "name";
-                column.Value = row["name"];
+            table.Columns[0].Values.Add(1, "jai");
+            table.Columns[0].Values.Add(2, "urvashi");
+            table.Columns[0].Values.Add(3, "rajesh");
+            table.Columns[0].Values.Add(4, "smeeta");
 
-                table.Columns.Add(column);
-            }
-        }
-
-        static void InitializeData()
-        {
-            var row = new Dictionary<string, string>();
-            row.Add("name", "rajesh");
-            row.Add("city", "mumbai");
-
-            data.Add(row);
-
-
-            row = new Dictionary<string, string>();
-            row.Add("name", "urvashi");
-            row.Add("city", "mumbai");
-            data.Add(row);
-
-
-            row = new Dictionary<string, string>();
-            row.Add("name", "jai");
-            row.Add("city", "delhi");
-            data.Add(row);
-
-
-            row = new Dictionary<string, string>();
-            row.Add("name", "anand");
-            row.Add("city", "pune");
-            data.Add(row);
+            table.Columns[1].Values.Add(1, "delhi");
+            table.Columns[1].Values.Add(2, "mumbai");
+            table.Columns[1].Values.Add(3, "kerala");
+            table.Columns[1].Values.Add(4, "mumbai");
 
         }
+
     }
 }
