@@ -50,6 +50,9 @@ namespace ColumnStore
             query.Measures.Add(new Measure() {Expression = "sum(salary)" });
             query.Measures.Add(new Measure() { Expression = "count(ename)" });
 
+            string[] filter = new string[1] { "mumbai" };
+            query.Filters.Add(new Filter() { ColName="city", Values= filter});
+
             var result = db.Query(query);
             Console.WriteLine(JsonConvert.SerializeObject(result));
 
@@ -142,6 +145,35 @@ namespace ColumnStore
             var tableName = "employees";
             var table = this.Tables[tableName];
             var result1 = new Dictionary<string, List<object>>();
+            int[] matchedIndexes = null;
+
+            //if filter Exist
+            if(queryParam.Filters.Count > 0)
+            {
+                var filterCol = table.Columns[queryParam.Filters[0].ColName];
+                matchedIndexes = filterCol.Values.FindIndexes<object>(v => queryParam.Filters[0].Values.Contains(v) == true).ToArray();
+                //filter Exist
+                for (int f =1;f< queryParam.Filters.Count; f++)// (var filter  in queryParam.Filters)
+                {
+                    var finalMatchedIndexes = new List<int>();
+                    var filter = queryParam.Filters[f];
+                    filterCol = table.Columns[filter.ColName];
+
+                    for(int m=0; m< matchedIndexes.Length; m++)
+                    {
+                        var mIndex = matchedIndexes[m];
+                        if (filter.Values.Contains(filterCol.Values[mIndex]))
+                        {
+                            finalMatchedIndexes.Add(mIndex);
+                        }
+                    }
+
+                    matchedIndexes = finalMatchedIndexes.ToArray();
+                    //matchedIndexes = filterCol.Values.FindIndexes<object>(v => filter.Values.Contains(v) == true).ToArray();   
+
+
+                }
+            }
 
             if (queryParam.Measures.Count == 0)
             {
@@ -156,9 +188,17 @@ namespace ColumnStore
             {
                 //Measures exist
                 
-                var totalColCount = queryParam.Dimensions.Count + queryParam.Measures.Count; 
-                for(int r=0; r< table.RowCount; r++)
+                var totalColCount = queryParam.Dimensions.Count + queryParam.Measures.Count;
+                int startIndex = 0, endIndex = table.RowCount;
+                bool isMatchedIndexExist = (null != matchedIndexes && matchedIndexes.Length > 0);
+                 
+                if(isMatchedIndexExist)
                 {
+                    endIndex = matchedIndexes.Length;
+                }
+                for (int i= startIndex; i< endIndex; i++)
+                {
+                    int r = isMatchedIndexExist ? matchedIndexes[i] : i;
                     var list = new List<object>();
                     var hKey = string.Empty;
                     var tempList = new List<object>();
@@ -236,7 +276,7 @@ namespace ColumnStore
         }
     }
 
-    class Utility
+    static class Utility
     {
         public static List<MeasureDetails> GetMeasureDetails(Measure measure)
         {
@@ -274,6 +314,20 @@ namespace ColumnStore
             //}
             return mDetailList;
         }
+
+        public static IEnumerable<int> FindIndexes<T>(this IEnumerable<T> items, Func<T, bool> predicate)
+        {
+            int index = 0;
+            foreach (T item in items)
+            {
+                if (predicate(item))
+                {
+                    yield return index;
+                }
+
+                index++;
+            }
+        }
     }
 
     class MeasureDetails
@@ -288,10 +342,13 @@ namespace ColumnStore
         {
             this.Dimensions = new List<string>();
             this.Measures = new List<Measure>();
+            this.Filters = new List<Filter>();
         }
         public List<string>  Dimensions { get; set; }
 
         public List<Measure> Measures { get; set; }
+
+        public List<Filter> Filters { get; set; }
     }
 
 
@@ -337,4 +394,26 @@ namespace ColumnStore
 
         public string Type { get; set; }
     }
+
+    public class Filter
+    {
+        private string _operType = "in";
+
+        public string ColName { get; set; }
+
+        public string[] Values { get; set; }
+
+        public string OperationType
+        {
+            get
+            {
+                return _operType;
+            }
+            set
+            {
+                _operType = value;
+            }
+        }       
+    }
+
 }
