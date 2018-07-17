@@ -29,6 +29,7 @@ namespace ColumnStore
         {
             //Query1();
             Query2();
+            //Query3();
         }
 
         static void Query1 ()
@@ -46,7 +47,18 @@ namespace ColumnStore
             var query = new QueryParam();
             query.Dimensions.Add("ename");
             query.Dimensions.Add("city");
-            query.Measures.Add("sum(salary)");
+            query.Measures.Add(new Measure() {Expression = "sum(salary)" });
+            query.Measures.Add(new Measure() { Expression = "count(ename)" });
+
+            var result = db.Query(query);
+            Console.WriteLine(JsonConvert.SerializeObject(result));
+
+        }
+
+        static void Query3()
+        {
+            var query = new QueryParam();          
+            query.Measures.Add(new Measure() { Expression = "sum(salary)" });
 
             var result = db.Query(query);
             Console.WriteLine(JsonConvert.SerializeObject(result));
@@ -167,38 +179,42 @@ namespace ColumnStore
                     }
 
                     var curColCount = queryParam.Dimensions.Count;
-                    foreach (var m in queryParam.Measures)
+                    foreach (var measure in queryParam.Measures)
                     {
                         curColCount++;
-                        var mName = "salary";
-                        var operation = "sum";
-
-                        switch (operation)
-                        {
-                            case "count":
-                                 if (list.Count > curColCount - 1)
-                                {
-                                    list[curColCount - 1] = Convert.ToInt32(list[curColCount - 1]) + 1;
-                                }
-                                else
-                                {
-                                    list.Add(1);
-                                }
-
-                                break;
-                            case "sum":
-                                if (list.Count > curColCount - 1)
-                                {
-                                    list[curColCount - 1] = Convert.ToDouble(list[curColCount - 1]) + Convert.ToDouble(table.Columns[mName].Values[r]);
-                                }
-                                else
-                                {
-                                    list.Add(table.Columns[mName].Values[r]);
-                                }
-
-                                break;
-                        }
                        
+                        //var operation = "sum";
+
+                        var curMeasureDtlList = Utility.GetMeasureDetails(measure);
+                        foreach(var mDetails in curMeasureDtlList)
+                        {
+                            var mName = mDetails.MName;
+                            switch (mDetails.Operation)
+                            {
+                                case "count":
+                                    if (list.Count > curColCount - 1)
+                                    {
+                                        list[curColCount - 1] = Convert.ToInt32(list[curColCount - 1]) + 1;
+                                    }
+                                    else
+                                    {
+                                        list.Add(1);
+                                    }
+
+                                    break;
+                                case "sum":
+                                    if (list.Count > curColCount - 1)
+                                    {
+                                        list[curColCount - 1] = Convert.ToDouble(list[curColCount - 1]) + Convert.ToDouble(table.Columns[mName].Values[r]);
+                                    }
+                                    else
+                                    {
+                                        list.Add(table.Columns[mName].Values[r]);
+                                    }
+
+                                    break;
+                            }
+                        }
                     }
 
                     if (!isAlreadyExist)
@@ -220,16 +236,62 @@ namespace ColumnStore
         }
     }
 
+    class Utility
+    {
+        public static List<MeasureDetails> GetMeasureDetails(Measure measure)
+        {
+            var mDetailList = new List<MeasureDetails>();
+            char[] delimiters = new char[] { '/', '+', '-', '*', ')', '(' };
+            var formula = measure.Expression;
+            var formulaParts = formula.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+
+         
+            var measureDetails = new MeasureDetails();
+            measureDetails.MName = measure.Expression.Replace("sum(", "").Replace(")", "").Trim();
+            if (measure.Expression.IndexOf("sum(") != -1)
+            {
+                measureDetails.Operation = "sum";
+            }
+            else if (measure.Expression.IndexOf("count(") != -1)
+            {
+                measureDetails.Operation = "count";
+            }
+            mDetailList.Add(measureDetails);
+           
+
+            //for (int i = 0; i < formulaParts.Length; i++)
+            //{
+            //    var measureDetails = new MeasureDetails();
+            //    measureDetails.MName = formulaParts[i].Replace("sum(", "").Replace(")", "").Trim();
+            //    if (formulaParts[i].IndexOf("sum(") != -1)
+            //    {                    
+            //        measureDetails.Operation = "sum";
+            //    } else if (formulaParts[i].IndexOf("count(") != -1)
+            //    {
+            //        measureDetails.Operation = "count";
+            //    }
+            //    mDetailList.Add(measureDetails);
+            //}
+            return mDetailList;
+        }
+    }
+
+    class MeasureDetails
+    {
+        public string MName { get; set; }
+        public string Operation { get; set; }
+    }
+
     class QueryParam
     {
         public QueryParam()
         {
             this.Dimensions = new List<string>();
-            this.Measures = new List<string>();
+            this.Measures = new List<Measure>();
         }
         public List<string>  Dimensions { get; set; }
 
-        public List<string> Measures { get; set; }
+        public List<Measure> Measures { get; set; }
     }
 
 
@@ -248,5 +310,31 @@ namespace ColumnStore
         public Dictionary<string, List<object>> Result { get; set; }
 
 
+    }
+
+    public class Measure
+    {
+        //private bool _isVisible = true;
+
+        private bool _isExpression = true;
+
+        public string Expression { get; set; }
+        public string DisplayName { get; set; }
+
+        public bool ShowTotal { get; set; }
+
+        public bool IsExpression
+        {
+            get
+            {
+                return _isExpression;
+            }
+            set
+            {
+                _isExpression = value;
+            }
+        }
+
+        public string Type { get; set; }
     }
 }
