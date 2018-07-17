@@ -157,17 +157,9 @@ namespace ColumnStore
         }
     }
 
-    
-
-
     class Program
     {
         static Database db = new Database();
-
-        static void Main(string[] args)
-        {
-            Run();
-        }
 
         static void Run()
         {
