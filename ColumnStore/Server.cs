@@ -26,13 +26,11 @@ namespace ColumnStore
         }
 
         static void RunTests()
-        {
-            //Query1();
-            Query2();
-            //Query3();
+        {           
+            Test_dimensions_measures_multiple_filters();
         }
 
-        static void Query1 ()
+        static void Test_simple_dimensions ()
         {
             var query = new QueryParam();
             query.Dimensions.Add("ename");
@@ -42,7 +40,7 @@ namespace ColumnStore
             Console.WriteLine(JsonConvert.SerializeObject(result));
         }
 
-        static void Query2()
+        static void Test_dimensions_measures_multiple_filters()
         {
             var query = new QueryParam();
             query.Dimensions.Add("ename");
@@ -50,15 +48,17 @@ namespace ColumnStore
             query.Measures.Add(new Measure() {Expression = "sum(salary)" });
             query.Measures.Add(new Measure() { Expression = "count(ename)" });
 
-            string[] filter = new string[1] { "mumbai" };
-            query.Filters.Add(new Filter() { ColName="city", Values= filter});
+            query.Filters.Add(new Filter() { ColName = "ename", Values = new string[1] { "name 0" } });
+            query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" } });            
+            //query.Filters.Add(new Filter() { ColName = "empid", Values = new string[1] { "0" } });
+
 
             var result = db.Query(query);
             Console.WriteLine(JsonConvert.SerializeObject(result));
 
         }
 
-        static void Query3()
+        static void Test_measures()
         {
             var query = new QueryParam();          
             query.Measures.Add(new Measure() { Expression = "sum(salary)" });
@@ -145,35 +145,9 @@ namespace ColumnStore
             var tableName = "employees";
             var table = this.Tables[tableName];
             var result1 = new Dictionary<string, List<object>>();
-            int[] matchedIndexes = null;
+            //int[] matchedIndexes = null;
 
-            //if filter Exist
-            if(queryParam.Filters.Count > 0)
-            {
-                var filterCol = table.Columns[queryParam.Filters[0].ColName];
-                matchedIndexes = filterCol.Values.FindIndexes<object>(v => queryParam.Filters[0].Values.Contains(v) == true).ToArray();
-                //filter Exist
-                for (int f =1;f< queryParam.Filters.Count; f++)// (var filter  in queryParam.Filters)
-                {
-                    var finalMatchedIndexes = new List<int>();
-                    var filter = queryParam.Filters[f];
-                    filterCol = table.Columns[filter.ColName];
-
-                    for(int m=0; m< matchedIndexes.Length; m++)
-                    {
-                        var mIndex = matchedIndexes[m];
-                        if (filter.Values.Contains(filterCol.Values[mIndex]))
-                        {
-                            finalMatchedIndexes.Add(mIndex);
-                        }
-                    }
-
-                    matchedIndexes = finalMatchedIndexes.ToArray();
-                    //matchedIndexes = filterCol.Values.FindIndexes<object>(v => filter.Values.Contains(v) == true).ToArray();   
-
-
-                }
-            }
+            int[] matchedIndexes = ApplyFilters(queryParam);
 
             if (queryParam.Measures.Count == 0)
             {
@@ -273,6 +247,43 @@ namespace ColumnStore
 
             queryResult.Result = result1;
             return queryResult;
+        }
+
+
+        private int[] ApplyFilters(QueryParam queryParam)
+        {
+            int[] matchedIndexes = null;
+            //if filter Exist
+            if (queryParam.Filters.Count > 0)
+            {
+                queryParam.Filters[0].TableName = "employees"; //Todo : Remove hardcoded
+                var table = this.Tables[queryParam.Filters[0].TableName];
+
+                var filterCol = table.Columns[queryParam.Filters[0].ColName];
+                matchedIndexes = filterCol.Values.FindIndexes<object>(v => queryParam.Filters[0].Values.Contains(v) == true).ToArray();
+                //filter Exist
+                for (int f = 1; f < queryParam.Filters.Count; f++)// (var filter  in queryParam.Filters)
+                {
+                    var finalMatchedIndexes = new List<int>();
+                    var filter = queryParam.Filters[f];
+                    filterCol = table.Columns[filter.ColName];
+
+                    for (int m = 0; m < matchedIndexes.Length; m++)
+                    {
+                        var mIndex = matchedIndexes[m];
+                        if (filter.Values.Contains(filterCol.Values[mIndex]))
+                        {
+                            finalMatchedIndexes.Add(mIndex);
+                        }
+                    }
+
+                    matchedIndexes = finalMatchedIndexes.ToArray();
+                    //matchedIndexes = filterCol.Values.FindIndexes<object>(v => filter.Values.Contains(v) == true).ToArray();   
+
+                }
+            }
+
+            return matchedIndexes;
         }
     }
 
@@ -413,7 +424,9 @@ namespace ColumnStore
             {
                 _operType = value;
             }
-        }       
+        }
+
+        public string TableName { get; set; }
     }
 
 }
