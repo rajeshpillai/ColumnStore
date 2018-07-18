@@ -42,11 +42,12 @@ namespace ColumnStore
             query.Dimensions.Add(new Dimension() { Name = "ename", TableName="employees" });
             query.Dimensions.Add(new Dimension() { Name = "city", TableName = "employees" });
             query.Dimensions.Add(new Dimension() { Name = "skill", TableName = "skills" });
-            //query.Dimensions.Add(new Dimension() { Name = "industryname", TableName = "industry" });
+            query.Dimensions.Add(new Dimension() { Name = "industryname", TableName = "industry" });
 
             //query.Filters.Add(new Filter() { ColName = "ename", Values = new string[1] { "name 0" } , TableName = "employees" });
             //query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" }, TableName = "employees" });
-            query.Filters.Add(new Filter() { ColName = "skill", Values = new string[1] { "nodejs" }, TableName = "skills" });
+            //query.Filters.Add(new Filter() { ColName = "skill", Values = new string[1] { "nodejs" }, TableName = "skills" });
+            query.Filters.Add(new Filter() { ColName = "industryname", Values = new string[1] { "ibm" }, TableName = "industry" });
 
             var result = db.Query(query);
             Console.WriteLine(JsonConvert.SerializeObject(result));
@@ -90,7 +91,7 @@ namespace ColumnStore
             table.Columns.Add("empid", new Column("empid"));
             table.Columns.Add("salary", new Column("salary"));
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 100000; i++)
             {
                 table.Columns["ename"].Values.Add("name " + i.ToString());
                 table.Columns["city"].Values.Add((i % 2 == 0 ? "mumbai" : "chennai"));
@@ -98,10 +99,10 @@ namespace ColumnStore
                 table.Columns["salary"].Values.Add(i + 100);
             }
 
-            table.Columns["ename"].Values.Add("name 0");
-            table.Columns["city"].Values.Add("delhi");
-            table.Columns["empid"].Values.Add("0");
-            table.Columns["salary"].Values.Add(1000);
+            //table.Columns["ename"].Values.Add("name 0");
+            //table.Columns["city"].Values.Add("delhi");
+            //table.Columns["empid"].Values.Add("0");
+            //table.Columns["salary"].Values.Add(1000);
 
             //table.Columns["ename"].Values.Add("name 22");
             //table.Columns["city"].Values.Add("mumbai");
@@ -121,16 +122,16 @@ namespace ColumnStore
             table.Columns.Add("industryid", new Column("industryid"));
 
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 100000; i++)
             {
                 table.Columns["empid"].Values.Add(i);
                 table.Columns["skill"].Values.Add(i % 2 == 0 ? "nodejs" : ".net");
                 table.Columns["industryid"].Values.Add("i" +i.ToString());
             }
 
-            table.Columns["empid"].Values.Add("22");
-            table.Columns["skill"].Values.Add("expressjs");
-            table.Columns["industryid"].Values.Add("i22");
+            //table.Columns["empid"].Values.Add("22");
+            //table.Columns["skill"].Values.Add("expressjs");
+            //table.Columns["industryid"].Values.Add("i22");
 
             table.RowCount = table.Columns["empid"].Values.Count();
             //return table;        
@@ -144,15 +145,15 @@ namespace ColumnStore
             table.Columns.Add("industryname", new Column("industryname"));
 
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 100000; i++)
             {
                 table.Columns["industryid"].Values.Add("i" + i.ToString());
                 table.Columns["industryname"].Values.Add(i % 2 == 0 ? "microsoft" : "ibm");
 
             }
 
-            table.Columns["industryid"].Values.Add("i22");
-            table.Columns["industryname"].Values.Add("tcs");
+            //table.Columns["industryid"].Values.Add("i22");
+            //table.Columns["industryname"].Values.Add("tcs");
 
             table.RowCount = table.Columns["industryid"].Values.Count();
             //return table;        
@@ -334,7 +335,28 @@ namespace ColumnStore
                         //IntermidiateQueryResult firstTableResult = null;
                         //IntermidiateQueryResult secondTableResult = null;
 
-                        GetQueryJoinResult(curTableResult, prevTableResult, keyField,tempQResult, queryParam);
+                        if (queryParam.Filters.Count() > 0)
+                        {
+                            //check  if curTableResult has filter column or not
+                            if (null != queryParam.Filters.Where(qf => curTableResult.Values.ContainsKey(qf.ColName)).FirstOrDefault())
+                            {
+                                GetQueryJoinResult(curTableResult, prevTableResult, keyField, tempQResult, queryParam);
+                            } else if (null != queryParam.Filters.Where(qf => prevTableResult.Values.ContainsKey(qf.ColName)).FirstOrDefault())
+                            {
+                                GetQueryJoinResult(prevTableResult,curTableResult, keyField, tempQResult, queryParam);
+                            } else
+                            {
+                                GetQueryJoinResult(curTableResult, prevTableResult, keyField, tempQResult, queryParam);
+                            }
+                        } else
+                        {
+                            GetQueryJoinResult(curTableResult, prevTableResult, keyField, tempQResult, queryParam);
+                        }
+
+                     
+
+
+
                         if (queryParam.Filters.Count == 0) { 
                             GetQueryJoinResult(prevTableResult, curTableResult, keyField, tempQResult,queryParam, false);
                         }
@@ -355,100 +377,125 @@ namespace ColumnStore
             return queryResult;
         }
 
-        private void GetQueryJoinResult(IntermidiateQueryResult firstTableResult, IntermidiateQueryResult secondTableResult, string keyField, IntermidiateQueryResult tempQResult, QueryParam queryParam, bool isFirtsTime =true)
+        private void GetQueryJoinResult(IntermidiateQueryResult firstTableResult, IntermidiateQueryResult secondTableResult, string keyField, IntermidiateQueryResult tempQResult, QueryParam queryParam, bool isFirtsTime = true)
         {
-            //if (preTableResult.Values[keyField].Count() > curTableResult.Values[keyField].Count())
-            //{
-            //    firstTableResult = preTableResult;
-            //    secondTableResult = curTableResult;
-            //}
-            //else
-            //{
-            //    firstTableResult = curTableResult;
-            //    secondTableResult = preTableResult;
-            //}
-
-            var firstTableKeyColData = firstTableResult.Values[keyField];
-            for (int firstTblRowIndex = 0; firstTblRowIndex < firstTableKeyColData.Count(); firstTblRowIndex++)
+            try
             {
-                var indexArray = secondTableResult.Values[keyField].FindIndexes<object>(v => v.ToString() == firstTableKeyColData[firstTblRowIndex].ToString()).ToArray();
-                
-                //If no matching found then we need that data in final result as outer join
-                if (indexArray.Length == 0 && queryParam.Filters.Count() == 0)
+                //if (preTableResult.Values[keyField].Count() > curTableResult.Values[keyField].Count())
+                //{
+                //    firstTableResult = preTableResult;
+                //    secondTableResult = curTableResult;
+                //}
+                //else
+                //{
+                //    firstTableResult = curTableResult;
+                //    secondTableResult = preTableResult;
+                //}
+                int[] matchedIndexes = null;
+                if (queryParam.Filters.Count > 0)
                 {
-                    if (secondTableResult.Values[keyField].Contains(firstTableKeyColData[firstTblRowIndex]))
-                    {
-                        //Second table has key
-                        tempQResult.Values[keyField].Add(secondTableResult.Values[keyField][secondTableResult.Values[keyField].IndexOf(firstTableKeyColData[firstTblRowIndex])].ToString());
-                        foreach (var key in tempQResult.Values.Keys)
-                        {
-                            if (secondTableResult.Values.ContainsKey(key))
-                            {
-                                if (key != keyField)
-                                {
-                                    tempQResult.Values[key].Add(secondTableResult.Values[key][secondTableResult.Values[keyField].IndexOf(firstTableKeyColData[firstTblRowIndex])].ToString());
-                                }
-                            }
-                            if (firstTableResult.Values.ContainsKey(key))
-                            {
-                                if (key != keyField)
-                                {
-                                    tempQResult.Values[key].Add("");
-                                }
-
-                            }
-                        }
-                    }
-                    else 
-                    {
-                        //First table has key
-                        tempQResult.Values[keyField].Add(firstTableResult.Values[keyField][firstTblRowIndex]);
-                        foreach (var key in tempQResult.Values.Keys)
-                        {
-                            if (secondTableResult.Values.ContainsKey(key))
-                            {
-                                if (key != keyField)
-                                {
-                                    tempQResult.Values[key].Add("");
-                                }
-                            }
-                            if (firstTableResult.Values.ContainsKey(key))
-                            {
-                                if (key != keyField)
-                                {
-                                    tempQResult.Values[key].Add(firstTableResult.Values[key][firstTableResult.Values[keyField].IndexOf(firstTableKeyColData[firstTblRowIndex])].ToString());
-                                }
-                            }
-                        }
-                    }
-
-
-                }                
-                else if (null != indexArray && indexArray.Length > 0 && isFirtsTime)
-                {
-                    foreach (var key in tempQResult.Values.Keys)
-                    {
-                        foreach (int ia in indexArray)
-                        {
-                            if (secondTableResult.Values.ContainsKey(key))
-                            {
-                                tempQResult.Values[key].Add(secondTableResult.Values[key][ia].ToString());
-                            }
-                            if (firstTableResult.Values.ContainsKey(key))
-                            {
-                                if (key != keyField)
-                                {
-                                    tempQResult.Values[key].Add(firstTableResult.Values[key][firstTblRowIndex]);
-                                }
-
-                            }
-
-                        }
-
-
-                    }
-
+                    matchedIndexes = ApplyFiltersForMultipleJoins(queryParam, firstTableResult, null);
                 }
+
+                int startIndex = 0, endIndex = firstTableResult.Values[keyField].Count();
+                bool isMatchedIndexExist = (null != matchedIndexes && matchedIndexes.Length > 0);
+                if (isMatchedIndexExist)
+                {
+                    endIndex = matchedIndexes.Length;
+                }
+                //var data = new List<object>();
+                for (int i = startIndex; i < endIndex; i++)
+                {
+                    int firstTblRowIndex = isMatchedIndexExist ? matchedIndexes[i] : i;
+                    //data.Add(table.Columns[dim.Name].Values[r]);
+
+
+                    var firstTableKeyColData = firstTableResult.Values[keyField];
+                    //for (int firstTblRowIndex = 0; firstTblRowIndex < firstTableKeyColData.Count(); firstTblRowIndex++)
+                    //{
+                    var indexArray = secondTableResult.Values[keyField].FindIndexes<object>(v => v.ToString() == firstTableKeyColData[firstTblRowIndex].ToString()).ToArray();
+
+                    //If no matching found then we need that data in final result as outer join
+                    if (indexArray.Length == 0 && queryParam.Filters.Count() == 0)
+                    {
+                        if (secondTableResult.Values[keyField].Contains(firstTableKeyColData[firstTblRowIndex]))
+                        {
+                            //Second table has key
+                            tempQResult.Values[keyField].Add(secondTableResult.Values[keyField][secondTableResult.Values[keyField].IndexOf(firstTableKeyColData[firstTblRowIndex])].ToString());
+                            foreach (var key in tempQResult.Values.Keys)
+                            {
+                                if (secondTableResult.Values.ContainsKey(key))
+                                {
+                                    if (key != keyField)
+                                    {
+                                        tempQResult.Values[key].Add(secondTableResult.Values[key][secondTableResult.Values[keyField].IndexOf(firstTableKeyColData[firstTblRowIndex])].ToString());
+                                    }
+                                }
+                                if (firstTableResult.Values.ContainsKey(key))
+                                {
+                                    if (key != keyField)
+                                    {
+                                        tempQResult.Values[key].Add("");
+                                    }
+
+                                }
+                            }
+                        }
+                        else
+                        {
+                            //First table has key
+                            tempQResult.Values[keyField].Add(firstTableResult.Values[keyField][firstTblRowIndex]);
+                            foreach (var key in tempQResult.Values.Keys)
+                            {
+                                if (secondTableResult.Values.ContainsKey(key))
+                                {
+                                    if (key != keyField)
+                                    {
+                                        tempQResult.Values[key].Add("");
+                                    }
+                                }
+                                if (firstTableResult.Values.ContainsKey(key))
+                                {
+                                    if (key != keyField)
+                                    {
+                                        tempQResult.Values[key].Add(firstTableResult.Values[key][firstTableResult.Values[keyField].IndexOf(firstTableKeyColData[firstTblRowIndex])].ToString());
+                                    }
+                                }
+                            }
+                        }
+
+
+                    }
+                    else if (null != indexArray && indexArray.Length > 0 && isFirtsTime)
+                    {
+                        foreach (var key in tempQResult.Values.Keys)
+                        {
+                            foreach (int ia in indexArray)
+                            {
+                                if (secondTableResult.Values.ContainsKey(key))
+                                {
+                                    tempQResult.Values[key].Add(secondTableResult.Values[key][ia].ToString());
+                                }
+                                if (firstTableResult.Values.ContainsKey(key))
+                                {
+                                    if (key != keyField)
+                                    {
+                                        tempQResult.Values[key].Add(firstTableResult.Values[key][firstTblRowIndex]);
+                                    }
+
+                                }
+
+                            }
+
+
+                        }
+
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                throw ex;
             }
         }
 
