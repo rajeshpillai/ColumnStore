@@ -2,12 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using System.Diagnostics;
+using System.Threading;
+using System.Dynamic;
+using System.Reflection;
 
 namespace ColumnStore
 {
     class Server
     {
         static Database db = null;
+        static int tableRowCount = 5;
 
         static void Main(string[] args)
         {
@@ -21,7 +26,9 @@ namespace ColumnStore
             db = new Database();
             BuildEmployeeTable(db);
             BuildSkillsTable(db);
-            BuildIndustryTable(db);
+            //BuildIndustryTable(db);
+
+           // BuildSymbolTable(db);
 
             RunTests();
 
@@ -30,7 +37,16 @@ namespace ColumnStore
         static void RunTests()
         {
             //Test_dimensions_measures_multiple_filters();
+
+
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
             Test_simple_dimensions();
+            stopWatch.Stop();
+            // Get the elapsed time as a TimeSpan value.
+            TimeSpan ts = stopWatch.Elapsed;
+
+            
         }
 
         static void Test_simple_dimensions()
@@ -42,12 +58,12 @@ namespace ColumnStore
             query.Dimensions.Add(new Dimension() { Name = "ename", TableName="employees" });
             query.Dimensions.Add(new Dimension() { Name = "city", TableName = "employees" });
             query.Dimensions.Add(new Dimension() { Name = "skill", TableName = "skills" });
-            query.Dimensions.Add(new Dimension() { Name = "industryname", TableName = "industry" });
+            //query.Dimensions.Add(new Dimension() { Name = "industryname", TableName = "industry" });
 
             //query.Filters.Add(new Filter() { ColName = "ename", Values = new string[1] { "name 0" } , TableName = "employees" });
             //query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" }, TableName = "employees" });
             //query.Filters.Add(new Filter() { ColName = "skill", Values = new string[1] { "nodejs" }, TableName = "skills" });
-            query.Filters.Add(new Filter() { ColName = "industryname", Values = new string[1] { "ibm" }, TableName = "industry" });
+            //query.Filters.Add(new Filter() { ColName = "industryname", Values = new string[1] { "ibm" }, TableName = "industry" });
 
             var result = db.Query(query);
             Console.WriteLine(JsonConvert.SerializeObject(result));
@@ -91,15 +107,61 @@ namespace ColumnStore
             table.Columns.Add("empid", new Column("empid"));
             table.Columns.Add("salary", new Column("salary"));
 
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < tableRowCount; i++)
             {
-                table.Columns["ename"].Values.Add("name " + i.ToString());
-                table.Columns["city"].Values.Add((i % 2 == 0 ? "mumbai" : "chennai"));
-                table.Columns["empid"].Values.Add(i.ToString());
-                table.Columns["salary"].Values.Add(i + 100);
+                table.Data.Add(new
+                {
+                    ename = "name " + i.ToString(),
+                    city = (i % 2 == 0 ? "mumbai" : "chennai"),
+                    empid = i.ToString(),
+                    salary = i + 100
+                });
+
+                table.Data1.Add(i.ToString(),new
+                {
+                    ename = "name " + i.ToString(),
+                    city = (i % 2 == 0 ? "mumbai" : "chennai"),
+                    empid = i.ToString(),
+                    salary = i + 100
+                });
+
+
+
+                var data = new Dictionary<string, object>();
+                data.Add("ename", "name " + i.ToString());
+                data.Add("city", (i % 2 == 0 ? "mumbai" : "chennai"));
+                data.Add("empid", i.ToString());
+                data.Add("salary", i + 100);
+                table.Data2.Add(i.ToString(), data);
             }
 
-            //table.Columns["ename"].Values.Add("name 0");
+            //var data111 = new Dictionary<string, object>();
+            //data111.Add("ename", "name " + "6".ToString());
+            //data111.Add("city", (6 % 2 == 0 ? "mumbai" : "chennai"));
+            //data111.Add("empid", "6");
+            //data111.Add("salary", 6 + 100);
+            //table.Data2.Add("6", data111);
+
+
+            //for (int i = 5; i < 6; i++)
+            //{
+            //    table.Data.Add(new
+            //    {
+            //        ename = "name " + i.ToString(),
+            //        city = (i % 2 == 0 ? "mumbai" : "chennai"),
+            //        empid = i.ToString(),
+            //        salary = i + 100
+            //    });
+            //}
+            //for (int i = 11; i < 12; i++)
+            //{
+            //    table.Columns["ename"].Values.Add("name " + i.ToString());
+            //    table.Columns["city"].Values.Add((i % 2 == 0 ? "mumbai" : "chennai"));
+            //    table.Columns["empid"].Values.Add(i.ToString());
+            //    table.Columns["salary"].Values.Add(i + 100);
+            //}
+
+            //table.Columns["ename"].Values.Add("name " + 0.ToString());
             //table.Columns["city"].Values.Add("delhi");
             //table.Columns["empid"].Values.Add("0");
             //table.Columns["salary"].Values.Add(1000);
@@ -109,7 +171,12 @@ namespace ColumnStore
             //table.Columns["empid"].Values.Add("22");
             //table.Columns["salary"].Values.Add(2000);
 
-            table.RowCount = table.Columns["ename"].Values.Count();
+            //table.Columns["ename"].Values.Add("name 23");
+            //table.Columns["city"].Values.Add("delhi");
+            //table.Columns["empid"].Values.Add("23");
+            //table.Columns["salary"].Values.Add(2000);
+
+            table.RowCount = table.Data.Count();
             //return table;
         }
 
@@ -122,18 +189,47 @@ namespace ColumnStore
             table.Columns.Add("industryid", new Column("industryid"));
 
 
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < tableRowCount; i++)
             {
-                table.Columns["empid"].Values.Add(i);
-                table.Columns["skill"].Values.Add(i % 2 == 0 ? "nodejs" : ".net");
-                table.Columns["industryid"].Values.Add("i" +i.ToString());
+                table.Data.Add(new
+                {
+                    empid = i.ToString(),
+                    skill = i % 2 == 0 ? "nodejs" : ".net",                    
+                    industryid = "i" + i.ToString()
+                });
+
+                table.Data1.Add(i.ToString(), new
+                {
+                    empid = i.ToString(),
+                    skill = i % 2 == 0 ? "nodejs" : ".net",
+                    industryid = "i" + i.ToString()
+                });
+
+                var data = new Dictionary<string, object>();
+                data.Add("empid", i.ToString());
+                data.Add("skill", i % 2 == 0 ? "nodejs" : ".net");
+                data.Add("industryid", i.ToString());              
+                table.Data2.Add(i.ToString(), data);
             }
 
-            //table.Columns["empid"].Values.Add("22");
-            //table.Columns["skill"].Values.Add("expressjs");
-            //table.Columns["industryid"].Values.Add("i22");
+            //var data111 = new Dictionary<string, object>();           
+            //data111.Add("empid", "7");
+            //data111.Add("skill", 7 % 2 == 0 ? "expressjs" : "sql");
+            //data111.Add("industryid", "6");
+            //table.Data2.Add("7", data111);
 
-            table.RowCount = table.Columns["empid"].Values.Count();
+            //for (int i = 0; i < 1; i++)
+            //{
+            //    table.Columns["empid"].Values.Add(i);
+            //    table.Columns["skill"].Values.Add(i % 2 == 0 ? "expressjs" : "sql");
+            //    table.Columns["industryid"].Values.Add("i" + i.ToString());
+            //}
+
+            //table.Columns["empid"].Values.Add("23");
+            //table.Columns["skill"].Values.Add("expressjs");
+            //table.Columns["industryid"].Values.Add("i23");
+
+            table.RowCount = table.Data.Count();
             //return table;        
         }
 
@@ -145,21 +241,113 @@ namespace ColumnStore
             table.Columns.Add("industryname", new Column("industryname"));
 
 
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < tableRowCount; i++)
             {
-                table.Columns["industryid"].Values.Add("i" + i.ToString());
-                table.Columns["industryname"].Values.Add(i % 2 == 0 ? "microsoft" : "ibm");
+                table.Data.Add(new
+                {
+                    industryid = i.ToString(),
+                    industryname = i % 2 == 0 ? "microsoft" : "ibm"
+                });
+
+
+                var data = new Dictionary<string, object>();
+                data.Add("industryid",  i.ToString());
+                data.Add("industryname", (i % 2 == 0 ? "microsoft" : "ibm"));               
+                table.Data2.Add(i.ToString(), data);
 
             }
 
             //table.Columns["industryid"].Values.Add("i22");
             //table.Columns["industryname"].Values.Add("tcs");
 
-            table.RowCount = table.Columns["industryid"].Values.Count();
+            table.RowCount = table.Data.Count();
             //return table;        
         }
 
+        //static void BuildSymbolTable(Database db)
+        //{
+        //    var symbolTableList = new List<SymbolTable>();
+        //    foreach(string tblName in db.Tables.Keys)
+        //    {
+        //        var table = db.Tables[tblName];
+        //        foreach (var col in table.Columns)
+        //        {
+        //            SymbolTable symbolTable = symbolTableList.Where(s => s.ColumnName == col.Key).FirstOrDefault();
+        //            bool isNewSymTable = false;
+        //            IEnumerable<object> distinctValues = new List<object>();
+        //            if(null == symbolTable)
+        //            {
+        //                symbolTable = new SymbolTable();
+        //                symbolTable.ColumnName = col.Key;
+        //                isNewSymTable = true;
+        //                //Get distinct values of each column
+        //                distinctValues = col.Value.Values.Select(s => s).Distinct();
+        //                //symbolTable.Values.AddRange(col.Value.Values.Select(s => s).Distinct());
+        //            } else
+        //            {
+        //                //Get distinct values of each column
+        //                distinctValues = col.Value.Values.Select(s => s.ToString()).Distinct();
+                       
+        //                //var t = symbolTable.Values.Select(s => s.Value).Distinct().ToArray();
+        //                //distinctValues = distinctValues.Where(d=>  !symbolTable.Values.Select(s => s.Value).Distinct().ToArray().Contains(d)).ToArray();
+        //                //distinctValues = distinctValues.Select(s => s).Distinct();
+                        
+        //            }
+
+        //            foreach(var val in distinctValues)
+        //            {
+        //                var symbVal = new SymbValue(val);
+        //                if(!symbVal.Indexes.ContainsKey(tblName))
+        //                {
+        //                    symbVal.Indexes.Add(tblName, col.Value.Values.IndicesOf<object>(val).ToList());
+        //                } else
+        //                {
+        //                    symbVal.Indexes[tblName].AddRange(col.Value.Values.IndicesOf<object>(val).ToList());
+        //                }
+                        
+        //                symbolTable.Values.Add(symbVal);
+        //            }
+
+        //            if (isNewSymTable)
+        //            {
+        //                symbolTableList.Add(symbolTable);
+        //            }                    
+        //        }
+        //    }
+
+        //    db.SymbolTableList = symbolTableList;
+        //}
+
     }
+
+
+    class SymbolTable
+    {
+        public SymbolTable()
+        {
+            this.Values = new List<SymbValue>();
+        }
+        public string ColumnName { get; set; }
+
+        public List<SymbValue> Values { get; set; }
+    }
+
+    class SymbValue
+    {
+        public SymbValue(object value)
+        {
+            this.IsTaken = false;
+            this.Value = value;
+            this.Indexes = new Dictionary<string, List<int>>();
+        }
+        public bool IsTaken { get; set; }
+
+        public object Value { get; set; }
+
+        public Dictionary<string, List<int>>  Indexes { get; set; }
+    }
+
+    
 
     class Column
     {
@@ -178,8 +366,17 @@ namespace ColumnStore
         {
             this.Name = name;
             this.Columns = new Dictionary<string, Column>();
+            this.Data = new List<dynamic>();
+            this.Data1 = new Dictionary<string, object>();
+            this.Data2 = new Dictionary<string, Dictionary<string, object>>();
         }
         public string Name { get; set; }
+
+        public List<dynamic> Data { get; set; }
+
+        public Dictionary<string,object> Data1 { get; set; }
+
+        public Dictionary<string, Dictionary<string, object>> Data2 { get; set; }
 
         public Dictionary<string, Column> Columns { get; set; }
 
@@ -196,6 +393,8 @@ namespace ColumnStore
         }
         public Dictionary<string,Table> Tables { get; set; }
 
+        public List<SymbolTable> SymbolTableList { get; set; }
+
         public QueryResult Query(QueryParam queryParam)
         {
             //Get tables involved.
@@ -208,172 +407,375 @@ namespace ColumnStore
 
             var tables =  GetTablesInvoled(queryParam);
 
-            if (tables.Count == 1)
-            {
-                //Single table involved
-                queryResult.Result = GetResultForSingleTable(queryParam, tables[0]);
-                return queryResult;
-            }
-            else
-            {
-                //Multiple tables involved
-                //int[] matchedIndexes = ApplyFilters(queryParam);
-                //var result1 = new Dictionary<string, List<object>>();
-                int[] matchedIndexes = null;
-                var prevTableResult = new IntermidiateQueryResult();
-                var curTableResult = new IntermidiateQueryResult();
-                var tempQResult = new IntermidiateQueryResult();
-                for (int t = 0; t < tables.Count(); t++)
-                //foreach (var table in tables)
-                {
-                    //queryResult = new QueryResult();
-
-                    var table = tables[t];
-                    var nextTable = (t == tables.Count() - 1) ? tables[t - 1] : tables[t + 1];
-                    var keyFieldList = GetKeyFields(table, nextTable);
-                    //table.key
-
-
-                    var dims = queryParam.Dimensions.Where(d => d.TableName == table.Name).ToList();
-
-                    var keyDims = keyFieldList.Where(k => dims.Select(d => d.Name).ToList().Contains(k) != true).ToList();
-                    foreach (var kdName in keyDims)
-                    {
-                        dims.Add(new Dimension() { Name = kdName, TableName = table.Name });
-                    }
-
-                    queryResult.KeyFields.Add(table.Name, keyFieldList[0]);
-
-                    ////If filter exists get matched indexes.
-                    //if(queryParam.Filters.Count> 0)
-                    //{
-                    //    matchedIndexes = ApplyFiltersForMultipleJoins(queryParam, curTableResult);
-                    //}
-
-                    int startIndex = 0, endIndex = 0;
-                    bool isMatchedIndexExist = false ;
-
-                    if (t == 0)
-                    {
-                        //foreach (var dim in dims)
-                        //{
-                        //    //curTableResult.ColumnNames.Add(dim.Name);
-                        //    curTableResult.Values.Add(dim.Name, table.Columns[dim.Name].Values);
-                        //}
-                        //If filter exists get matched indexes.
-                        if (queryParam.Filters.Count > 0)
-                        {
-                            matchedIndexes = ApplyFiltersForMultipleJoins(queryParam, null, table);
-                        }
-                        startIndex = 0; endIndex = table.RowCount;
-                        isMatchedIndexExist = (null != matchedIndexes && matchedIndexes.Length > 0);
-                        if (isMatchedIndexExist)
-                        {
-                            endIndex = matchedIndexes.Length;
-                        }
-
-                        foreach (var dim in dims)
-                        {
-                            //curTableResult.ColumnNames.Add(dim.Name);
-                            //curTableResult.Values.Add(dim.Name, table.Columns[dim.Name].Values);
-                            var data = new List<object>();
-                            for (int i = startIndex; i < endIndex; i++)
-                            {
-                                int r = isMatchedIndexExist ? matchedIndexes[i] : i;
-                                data.Add(table.Columns[dim.Name].Values[r]);
-                            }
-                            curTableResult.Values.Add(dim.Name, data);
-                        }
-                    }
-                    else
-                    {
-                        if (t > 1)
-                        {
-                            prevTableResult = tempQResult;
-                        }
-                        else
-                        {
-                            prevTableResult = curTableResult;
-                        }
-                        curTableResult = new IntermidiateQueryResult();
-
-                        //t != 0                      
-                        var prevTable = tables[t - 1];
-                        var keyField = GetKeyFields(table, prevTable)[0];
-
-                        if (null == dims.Where(d => d.Name == keyField).FirstOrDefault())
-                        {
-                            dims.Add(new Dimension() { Name = keyField, TableName = table.Name });
-                        }
-                        //var keyIndex =   queryResult.ColumnNames.FindIndexes<object>(v => v.ToString() == keyField).ToArray()[0];
-
-                        //var tempQResult = new QueryResult();
-                        foreach (var dim in dims)
-                        {
-                            //tempQResult.ColumnNames.Add(dim.Name);
-                            curTableResult.Values.Add(dim.Name, table.Columns[dim.Name].Values);
-                        }
-
-                        tempQResult = new IntermidiateQueryResult();
-                        foreach (var key in prevTableResult.Values.Keys)
-                        {
-                            if (!tempQResult.Values.ContainsKey(key))
-                            {
-                                tempQResult.Values.Add(key, new List<object>());
-                            }
-                        }
-                        foreach (var key in curTableResult.Values.Keys)
-                        {
-                            if (!tempQResult.Values.ContainsKey(key))
-                            {
-                                tempQResult.Values.Add(key, new List<object>());
-                            }
-                        }
-                        //Loop Key fields Data e.g. empId
-                        var preTableKeyColData = prevTableResult.Values[keyField];
-
-                        //IntermidiateQueryResult firstTableResult = null;
-                        //IntermidiateQueryResult secondTableResult = null;
-
-                        if (queryParam.Filters.Count() > 0)
-                        {
-                            //check  if curTableResult has filter column or not
-                            if (null != queryParam.Filters.Where(qf => curTableResult.Values.ContainsKey(qf.ColName)).FirstOrDefault())
-                            {
-                                GetQueryJoinResult(curTableResult, prevTableResult, keyField, tempQResult, queryParam);
-                            } else if (null != queryParam.Filters.Where(qf => prevTableResult.Values.ContainsKey(qf.ColName)).FirstOrDefault())
-                            {
-                                GetQueryJoinResult(prevTableResult,curTableResult, keyField, tempQResult, queryParam);
-                            } else
-                            {
-                                GetQueryJoinResult(curTableResult, prevTableResult, keyField, tempQResult, queryParam);
-                            }
-                        } else
-                        {
-                            GetQueryJoinResult(curTableResult, prevTableResult, keyField, tempQResult, queryParam);
-                        }
-
-                     
-
-
-
-                        if (queryParam.Filters.Count == 0) { 
-                            GetQueryJoinResult(prevTableResult, curTableResult, keyField, tempQResult,queryParam, false);
-                        }
-
-                        //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-                        var test = tempQResult;
-                        queryResult.Result = tempQResult.Values;
-
-                    }
-                    //queryResult.Result = result1;
-                }
-            }
-
+            Dictionary<string, Dictionary<string, object>> result = null;
            
+            for (int t = 0; t < tables.Count()-1; t++)
+            {
+                var table = tables[t];
+                var nextTable = (t == tables.Count() - 1) ? tables[t - 1] : tables[t + 1];
+                var keyFieldList = GetKeyFields(table, nextTable);
+                var key = keyFieldList[0];
+
+                //var result = table.Data.FullOuterJoin(
+                //                nextTable.Data, a => a.empid, b => b.empid, (a, b, empid) => new { empid = (null == a) ? "" : a.empid, ename = (null == a) ? "" : a.ename, skill = (null == b) ? "" : b.skill })
+                //                .ToList(); //.ForEach(Console.WriteLine);
+
+                if (null != result)
+                {
+                    //var tr2 = (result as IEnumerable<IDictionary<string, Object>>).Select(s => s.Values);
+                    var result23 = result.FullOuterJoin(
+                                                     nextTable.Data2, a => a.Key, b => b.Key, (a, b, qResult1) =>
+                                                     {
+                                                         var x = new Dictionary<string, Object>();
+
+                                                         //var aValue = a.Value;
+                                                         //aValue.Append(b.Value);
+                                                         Dictionary<string, object> dict = null;
+                                                         if (null == a.Value)
+                                                         {
+                                                             foreach (var col in table.Columns)
+                                                             {
+                                                                 if (!b.Value.ContainsKey(col.Key))
+                                                                 {
+                                                                     b.Value.Add(col.Key, "");
+                                                                 }
+                                                             }
+
+                                                             x.Add(b.Key, b.Value);
+                                                         }
+                                                         else if (null == b.Value)
+                                                         {
+                                                             x.Add(a.Key, a.Value);
+                                                             foreach (var col in nextTable.Columns)
+                                                             {
+                                                                 if (!a.Value.ContainsKey(col.Key))
+                                                                 {
+                                                                     a.Value.Add(col.Key, "");
+                                                                 }
+                                                             }
+                                                         }
+                                                         else
+                                                         {
+                                                             foreach (var k in b.Value.Keys)
+                                                             {
+                                                                 if (!a.Value.ContainsKey(k))
+                                                                 {
+                                                                     a.Value.Add(k, b.Value[k]);
+                                                                 }
+                                                             }
+                                                             x.Add(a.Key, a.Value);
+                                                         }
+
+
+                                                         return x;
+                                                     })
+                                                     .ToList();
+
+                    result = new Dictionary<string, Dictionary<string, object>>();
+                    foreach (var th in result23)
+                    {
+                        foreach (var k in th.Keys)
+                        {
+                            result.Add(k, th[k] as Dictionary<string, object>);
+                        }
+
+                    }
+
+                    //var tr2 = (result as IEnumerable<IDictionary<string, Object>>).Select(s => s.Values);
+                    //result = (result as IEnumerable<IDictionary<string, Object>>).Select(s => s.Values).FullOuterJoin(
+                    //                                 nextTable.Data1.Select(s => s.Value), c => c.GetType().GetProperty(key).GetValue(c), d => d.GetType().GetProperty(key).GetValue(d), (c, d, qResult1) =>
+                    //                                 {
+                    //                                     var x = new ExpandoObject() as IDictionary<string, Object>;
+                    //                                     foreach (PropertyInfo prop in c.GetType().GetProperties())
+                    //                                     {
+
+                    //                                         x.Add(prop.Name, c.GetType().GetProperty(prop.Name).GetValue(c));
+
+                    //                                     }
+                    //                                     foreach (PropertyInfo prop in d.GetType().GetProperties())
+                    //                                     {
+                    //                                         if (!x.ContainsKey(prop.Name))
+                    //                                         {
+                    //                                             x.Add(prop.Name, d.GetType().GetProperty(prop.Name).GetValue(d));
+                    //                                         }
+
+
+                    //                                     }
+                    //                                     return x;
+                    //                                 })
+                    //                                 .ToList();//.Where(d=>d.skill=="nodejs"); //.ForEach(Console.WriteLine);
+                }
+                else
+                {
+
+                    //result = table.Data.FullOuterJoin(
+                    //  nextTable.Data, a => a.GetType().GetProperty(key).GetValue(a), b => b.GetType().GetProperty(key).GetValue(b), (a, b, qResult) => {
+                    //      //return TypeMerger.Merger.Merge(a, b);
+                    //  }).ToList();//.Where(d=>d.skill=="nodejs"); //.ForEach(Console.WriteLine);
+
+
+                    //var tr = table.Data2.Select(s => s.Value);
+                   var result12 = table.Data2.FullOuterJoin(
+                             nextTable.Data2, a => a.Key, b => b.Key, (a, b, qResult) =>
+                             {
+                                 var x = new Dictionary<string, Object>();
+
+                                 //var aValue = a.Value;
+                                 //aValue.Append(b.Value);
+                                 Dictionary<string, object> dict = null;
+                                 if (null == a.Value)
+                                 {
+                                     foreach (var col in table.Columns)
+                                     {
+                                         if (!b.Value.ContainsKey(col.Key))
+                                         {
+                                             b.Value.Add(col.Key, "");
+                                         }
+                                     }
+
+                                     x.Add(b.Key, b.Value);
+                                 }
+                                 else if (null == b.Value)
+                                 {
+                                     x.Add(a.Key, a.Value);
+                                     foreach (var col in nextTable.Columns)
+                                     {
+                                         if (!a.Value.ContainsKey(col.Key))
+                                         {
+                                             a.Value.Add(col.Key, "");
+                                         }
+                                     }
+                                 }
+                                 else
+                                 {
+                                     foreach (var k in b.Value.Keys)
+                                     {
+                                         if (!a.Value.ContainsKey(k))
+                                         {
+                                             a.Value.Add(k, b.Value[k]);
+                                         }
+                                     }
+                                     x.Add(a.Key, a.Value);
+                                 }
+
+
+                                 return x;
+                             }
+                             ).ToList();
+
+                    result = new Dictionary<string, Dictionary<string, object>>();
+                    foreach(var th in result12)
+                    {
+                        foreach(var k in th.Keys)
+                        {
+                            result.Add(k, th[k] as Dictionary<string, object>);
+                        }
+                        
+                    }
+
+                    //var tr = table.Data1.Select(s => s.Value);
+                    //result = table.Data1.Select(s=>s.Value).FullOuterJoin(
+                    //         nextTable.Data1.Select(s => s.Value), a => a.GetType().GetProperty(key).GetValue(a), b => b.GetType().GetProperty(key).GetValue(b), (a, b, qResult) =>
+                    //         {
+                    //             var x = new ExpandoObject() as IDictionary<string, Object>;
+                    //             foreach (PropertyInfo prop in a.GetType().GetProperties())
+                    //             {
+                    //                 x.Add(prop.Name, a.GetType().GetProperty(prop.Name).GetValue(a));
+                    //             }
+                    //             foreach (PropertyInfo prop in b.GetType().GetProperties())
+                    //             {
+                    //                 if (!x.ContainsKey(prop.Name))
+                    //                 {
+                    //                     x.Add(prop.Name, b.GetType().GetProperty(prop.Name).GetValue(b));
+                    //                 }                                     
+                    //             }
+                    //             return x;
+                    //         }
+                    //         ).ToList();
+
+                    //result = table.Data.FullOuterJoin(
+                    //         nextTable.Data, a => a.GetType().GetProperty(key).GetValue(a), b => b.GetType().GetProperty(key).GetValue(b), (a, b, qResult) =>
+                    //         {
+                    //             var x = new ExpandoObject() as IDictionary<string, Object>;
+                    //             foreach (PropertyInfo prop in a.GetType().GetProperties())
+                    //             {
+                    //                 x.Add(prop.Name, a.GetType().GetProperty(prop.Name).GetValue(a));
+                    //             }
+                    //             return x;
+                    //         }
+                    //         ).ToList();//.Where(d=>d.skill=="nodejs"); //.ForEach(Console.WriteLine);
+
+
+
+                    //result = table.Data.FullOuterJoin(
+                    //  nextTable.Data, a => a.GetType().GetProperty(key).GetValue(a), b => b.GetType().GetProperty(key).GetValue(b), (a, b, qResult) => new
+                    //  {
+                    //      empid = (null == a) ? "" : a.empid,
+                    //      ename = (null == a) ? "" : a.ename,
+                    //      skill = (null == b) ? "" : b.skill
+                    //  }
+                    //  ).ToList();//.Where(d=>d.skill=="nodejs"); //.ForEach(Console.WriteLine);
+                }
+
+
+            }
+
+            //Todo: Get all dimension of same table together 
+            //queryParam.Dimensions.OrderBy(s=>s.TableName)
+
+
+            //if (tables.Count == 1)
+            //{
+            //    //Single table involved
+            //    //queryResult.Result = GetResultForSingleTable(queryParam, tables[0]);
+
+            //    //foreach(var dim in queryParam.Dimensions)
+            //    //{
+            //    //Get first Symbol Table
+            //    var symbolTable = this.SymbolTableList.Where(s => s.ColumnName == queryParam.Dimensions[0].Name).First();
+            //    List<int> indexes = null;
+            //    //Loop symbol table unique values
+            //    //var data = new List<object>();
+            //    var col = tables[0].Columns[queryParam.Dimensions[0].Name];
+            //    for (var s = 0; s < symbolTable.Values.Count(); s++)
+            //    {
+            //        var symb = symbolTable.Values[s];
+
+            //        var colData = new Dictionary<string, List<object>>();
+
+            //        indexes = symb.Indexes[queryParam.Dimensions[0].TableName];
+
+            //        foreach (var i in indexes)
+            //        {
+            //            foreach (var remDim in queryParam.Dimensions)
+            //            {
+            //                //var tempSymbolTable = this.SymbolTableList.Where(sii => sii.ColumnName == remDim.Name).First();
+            //                var tempDimData = this.Tables[remDim.TableName].Columns[remDim.Name].Values;
+            //                if (!queryResult.Result.ContainsKey(remDim.Name))
+            //                {
+            //                    queryResult.Result.Add(remDim.Name, new List<object>());
+            //                }
+
+            //                queryResult.Result[remDim.Name].Add(tempDimData[i]);
+
+            //                //data.Add(col.Values[i]);
+            //                //tempSymbolTable.Values[i].IsTaken = true;
+            //            }
+
+            //        }
+
+            //        //var notTakenSymbValuesIndexes = symbolTable.Values.FindIndexes<SymbValue>(si => si.IsTaken ==  false).ToArray();
+            //        ////symbolTable.Values.Where(sv => sv.IsTaken == false).ToList();
+            //        //if (notTakenSymbValuesIndexes.Count() > 0)
+            //        //{
+            //        //    foreach (var ni in notTakenSymbValuesIndexes)
+            //        //    {
+            //        //        data.Add(col.Values[ni]);
+            //        //        symb.IsTaken = true;
+            //        //    }
+            //        //}
+
+
+
+            //    }
+            //    //queryResult.Result.Add(dim.Name, data);
+            //    // }
+
+            //    return queryResult;
+            //}
+            //else
+            //{
+            //    //Multiple tables involved
+            //    var finalDimensionList = new List<Dimension>();
+            //    for (int t = 0; t < tables.Count(); t++)
+            //    {
+            //        //foreach (var table in tables)Where(k => dims.Select(d => d.Name).ToList().Contains(k) != true).ToList();
+
+
+            //        //queryResult = new QueryResult();
+
+            //        var table = tables[t];
+            //        var nextTable = (t == tables.Count() - 1) ? tables[t - 1] : tables[t + 1];
+            //        var keyFieldList = GetKeyFields(table, nextTable);
+            //        //table.key
+
+
+            //        var dims = queryParam.Dimensions.Where(d => d.TableName == table.Name).ToList();
+
+            //        //var keyDims = keyFieldList.                    
+            //        foreach (var kdName in keyFieldList)
+            //        {
+            //            if(null == finalDimensionList.Where(f=>f.Name == kdName).FirstOrDefault())
+            //            {
+            //                finalDimensionList.Add(new Dimension() { Name = kdName, TableName = table.Name });
+            //            }
+
+            //        }
+            //        finalDimensionList.AddRange(dims);
+
+            //    }
+
+            //    foreach (var dim in finalDimensionList)
+            //    {
+            //        var tableName = dim.TableName;
+
+            //        var symbolTable = this.SymbolTableList.Where(s => s.ColumnName == dim.Name).First();
+            //        var sumbValues = symbolTable.Values.Where(sv => sv.IsTaken == false);
+            //        foreach (var symbVal in sumbValues)
+            //        {                        
+            //            List<int> indexes = symbVal.Indexes.ContainsKey(dim.TableName)? symbVal.Indexes[dim.TableName]: new List<int>();
+            //            foreach (var remDim in finalDimensionList)
+            //            { 
+            //                var tempSymbolTable = this.SymbolTableList.Where(sii => sii.ColumnName == remDim.Name).First();
+            //                var tempDimData = this.Tables[remDim.TableName].Columns[remDim.Name].Values;
+            //                if (!queryResult.Result.ContainsKey(remDim.Name))
+            //                {
+            //                    queryResult.Result.Add(remDim.Name, new List<object>());
+            //                }
+            //                if(indexes.Count() == 0)
+            //                {
+
+            //                    if(dim == remDim)
+            //                    {
+            //                        queryResult.Result[remDim.Name].Add(symbVal.Value);
+            //                    } else
+            //                    {
+
+            //                        queryResult.Result[remDim.Name].Add("");
+            //                    }
+
+            //                }
+
+            //                //var tin = tempSymbolTable.Values.Inde.ContainsKey[remDim.Name] == true).fir
+            //                foreach (var i in indexes)
+            //                {                               
+            //                    if(i < tempDimData.Count)
+            //                    {
+            //                        queryResult.Result[remDim.Name].Add(tempDimData[i]);
+            //                        var tSymbTable = this.SymbolTableList.Where(sii => sii.ColumnName == remDim.Name).First();
+            //                        var t = tSymbTable.Values.Where(v => v.Value == tempDimData[i]).First();
+            //                        t.IsTaken = true;
+            //                        //this.SymbolTableList.Where(sii => sii.ColumnName == remDim.Name).First().Values.Where(v => v.Value == tempDimData[i]).First().IsTaken = true;
+            //                    }
+            //                    else
+            //                    {
+            //                        queryResult.Result[remDim.Name].Add("");
+            //                    }
+
+            //                    //data.Add(col.Values[i]);
+            //                    //tempSymbolTable.Values[i].IsTaken = true;
+            //                }
+            //            }
+            //            symbVal.IsTaken = true;
+
+            //        }
+            //    }
+            //}
+
+
 
             //queryResult.Result = queryResult.Values.Select(a => a.ToArray()).ToArray();
-            //queryResult.Result = result1;
+            queryResult.Result1 = result;
             return queryResult;
         }
 
@@ -403,6 +805,7 @@ namespace ColumnStore
                 {
                     endIndex = matchedIndexes.Length;
                 }
+              
                 //var data = new List<object>();
                 for (int i = startIndex; i < endIndex; i++)
                 {
@@ -430,8 +833,7 @@ namespace ColumnStore
                                     {
                                         tempQResult.Values[key].Add(secondTableResult.Values[key][secondTableResult.Values[keyField].IndexOf(firstTableKeyColData[firstTblRowIndex])].ToString());
                                     }
-                                }
-                                if (firstTableResult.Values.ContainsKey(key))
+                                } else if (firstTableResult.Values.ContainsKey(key))
                                 {
                                     if (key != keyField)
                                     {
@@ -453,8 +855,7 @@ namespace ColumnStore
                                     {
                                         tempQResult.Values[key].Add("");
                                     }
-                                }
-                                if (firstTableResult.Values.ContainsKey(key))
+                                } else if (firstTableResult.Values.ContainsKey(key))
                                 {
                                     if (key != keyField)
                                     {
@@ -475,8 +876,7 @@ namespace ColumnStore
                                 if (secondTableResult.Values.ContainsKey(key))
                                 {
                                     tempQResult.Values[key].Add(secondTableResult.Values[key][ia].ToString());
-                                }
-                                if (firstTableResult.Values.ContainsKey(key))
+                                } else if (firstTableResult.Values.ContainsKey(key))
                                 {
                                     if (key != keyField)
                                     {
@@ -756,6 +1156,8 @@ namespace ColumnStore
 
             tables.AddRange(queryParam.Filters.Select(d => d.TableName).Distinct().Where(m => !tables.Contains(m)).ToList());
 
+            tables = tables.Select(s => s).Distinct().ToList();
+
             List<Table> tableList = new List<Table>();
             foreach ( var t in tables)
             {
@@ -804,6 +1206,13 @@ namespace ColumnStore
             return mDetailList;
         }
 
+        public static IEnumerable<int> IndicesOf<T>(this IEnumerable<T> obj, T value)
+        {
+            return (from i in Enumerable.Range(0, obj.Count())
+                    where obj.ElementAt(i).Equals(value)
+                    select i);
+        }
+
         public static IEnumerable<int> FindIndexes<T>(this IEnumerable<T> items, Func<T, bool> predicate)
         {
             int index = 0;
@@ -816,6 +1225,59 @@ namespace ColumnStore
 
                 index++;
             }
+        }
+
+    }
+
+
+    internal static class MyExtensions
+    {
+        internal static IEnumerable<TResult> FullOuterGroupJoin<TA, TB, TKey, TResult>(
+            this IEnumerable<TA> a,
+            IEnumerable<TB> b,
+            Func<TA, TKey> selectKeyA,
+            Func<TB, TKey> selectKeyB,
+            Func<IEnumerable<TA>, IEnumerable<TB>, TKey, TResult> projection,
+            IEqualityComparer<TKey> cmp = null)
+        {
+            cmp = cmp ?? EqualityComparer<TKey>.Default;
+            var alookup = a.ToLookup(selectKeyA, cmp);
+            var blookup = b.ToLookup(selectKeyB, cmp);
+
+            var keys = new HashSet<TKey>(alookup.Select(p => p.Key), cmp);
+            keys.UnionWith(blookup.Select(p => p.Key));
+
+            var join = from key in keys
+                       let xa = alookup[key]
+                       let xb = blookup[key]
+                       select projection(xa, xb, key);
+
+            return join;
+        }
+
+        internal static IEnumerable<TResult> FullOuterJoin<TA, TB, TKey, TResult>(
+            this IEnumerable<TA> a,
+            IEnumerable<TB> b,
+            Func<TA, TKey> selectKeyA,
+            Func<TB, TKey> selectKeyB,
+            Func<TA, TB, TKey, TResult> projection,
+            TA defaultA = default(TA),
+            TB defaultB = default(TB),
+            IEqualityComparer<TKey> cmp = null)
+        {
+            cmp = cmp ?? EqualityComparer<TKey>.Default;
+            var alookup = a.ToLookup(selectKeyA, cmp);
+            var blookup = b.ToLookup(selectKeyB, cmp);
+
+            var keys = new HashSet<TKey>(alookup.Select(p => p.Key), cmp);
+            keys.UnionWith(blookup.Select(p => p.Key));
+
+            var join = from key in keys
+                       from xa in alookup[key].DefaultIfEmpty(defaultA)
+                       from xb in blookup[key].DefaultIfEmpty(defaultB)
+                       select projection(xa, xb, key);
+
+            return join;
         }
     }
 
@@ -848,6 +1310,7 @@ namespace ColumnStore
             this.Values = new List<List<object>>();
             this.ColumnNames = new List<string>();
             this.KeyFields = new Dictionary<string, string>();
+            this.Result = new Dictionary<string, List<object>>();
         }
 
         public List<string> ColumnNames { get; set; }
@@ -857,6 +1320,8 @@ namespace ColumnStore
         public Dictionary<string,string> KeyFields { get; set; }
 
         public Dictionary<string, List<object>> Result { get; set; }
+
+        public Dictionary<string, Dictionary<string, object>> Result1 { get; set; }
 
 
     }
@@ -951,6 +1416,52 @@ namespace ColumnStore
         }
 
         public string TableName { get; set; }
+    }
+
+    public class DynamicDictionary : DynamicObject
+    {
+        // The inner dictionary.
+        Dictionary<string, object> dictionary
+            = new Dictionary<string, object>();
+
+        // This property returns the number of elements
+        // in the inner dictionary.
+        public int Count
+        {
+            get
+            {
+                return dictionary.Count;
+            }
+        }
+
+        // If you try to get a value of a property 
+        // not defined in the class, this method is called.
+        public override bool TryGetMember(
+            GetMemberBinder binder, out object result)
+        {
+            // Converting the property name to lowercase
+            // so that property names become case-insensitive.
+            string name = binder.Name.ToLower();
+
+            // If the property name is found in a dictionary,
+            // set the result parameter to the property value and return true.
+            // Otherwise, return false.
+            return dictionary.TryGetValue(name, out result);
+        }
+
+        // If you try to set a value of a property that is
+        // not defined in the class, this method is called.
+        public override bool TrySetMember(
+            SetMemberBinder binder, object value)
+        {
+            // Converting the property name to lowercase
+            // so that property names become case-insensitive.
+            dictionary[binder.Name.ToLower()] = value;
+
+            // You can always add a value to a dictionary,
+            // so this method always returns true.
+            return true;
+        }
     }
 
 }
