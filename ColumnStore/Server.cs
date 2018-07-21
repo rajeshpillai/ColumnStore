@@ -56,8 +56,8 @@ namespace ColumnStore
             query.Dimensions.Add(new Dimension() { Name = "skill", TableName = "skills" });
             //query.Dimensions.Add(new Dimension() { Name = "industryname", TableName = "industry" });
 
-            //query.Filters.Add(new Filter() { ColName = "ename", Values = new string[1] { "name 0" } , TableName = "employees" });
-            //query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" }, TableName = "employees" });
+            query.Filters.Add(new Filter() { ColName = "ename", Values = new string[1] { "name 0" } , TableName = "employees" });
+            query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" }, TableName = "employees" });
             //query.Filters.Add(new Filter() { ColName = "skill", Values = new string[1] { "nodejs" }, TableName = "skills" });
             //query.Filters.Add(new Filter() { ColName = "industryname", Values = new string[1] { "ibm" }, TableName = "industry" });
 
@@ -436,14 +436,109 @@ namespace ColumnStore
                     isFilterinCurTable = (curFilters.Count() > 0);
                     if (isFilterinCurTable)
                     {
+                        //List<Func<Dictionary<string, object>, bool>> exp = new List<Expression>();
                         foreach (Filter f in curFilters)
                         {
+                            //curResult.AsQueryable().Where("");
+                            //var parameter = Expression.Parameter(typeof(Dictionary<string, object>), "x");
+                            //Expression<Func<List<Dictionary<string, object>>, bool>> e1 = l => f.Values.Contains("name 0");
+                            //Func<Dictionary<string, object>, bool> discountFilterExpression = Expression.Lambda<Func<Dictionary<string, object>, bool>>(e1, parameter).Compile();
+                            //curResult = curResult.Where(discountFilterExpression);
+
+                            //var parameter = Expression.Parameter(typeof(Dictionary<string, object>), "x");
+                            //var comparison = Expression.Equal(Expression.ArrayIndex(parameter, Expression.Constant("ename")), Expression.Constant("name 0"));
+
+
+                            //var methodInfo = typeof(List<string>).GetMethod("Contains",new Type[] { typeof(string) });
+                            //var list = Expression.Constant(f.Values);
+                            //var param = Expression.Parameter(typeof(Dictionary<string, object>), "j");
+                            //var value = Expression.Property(param, "ename");
+                            //var body = Expression.Call(list, methodInfo, value);
+
+
+
+
+                            ////ParameterExpression ename = Expression.con.Parameter(typeof(Dictionary<string, object>), "parm");
+                            //var comparison = Expression.Equal(Expression. ArrayIndex(parameter, Expression.Constant("ename")), Expression.Constant("name 0"));
+                            //Func<Dictionary<string, object>, bool> discountFilterExpression = Expression.Lambda<Func<Dictionary<string, object>, bool>>(comparison, parameter).Compile();
+                            //var discountedAlbums = curResult.Where(discountFilterExpression);
+                            //var comparison = Expression.GreaterThan(Expression.Property(parameter, Type.GetType("ConsoleApp6.Album").GetProperty("Quantity")), Expression.Constant(100));
+
+                            //Func<Album, bool> discountFilterExpression = Expression.Lambda<Func<Album, bool>>(comparison, parameter).Compile();
+
+                            //var discountedAlbums = albums.Where(discountFilterExpression);
+
                             //ParameterExpression param = Expression.Parameter(typeof(Dictionary<string, object>), "parm");
                             //var exp = GetExpression<Dictionary<string, object>>(param, f);
                             //var exp1 = exp;
-                            curResult = curResult.Where(s => f.Values.Contains(s[f.ColName].ToString()));
+                            //var tt = Expression.Lambda<Func<Dictionary<string, object>, bool>>(exp, param).Compile();
+                            //tt(curResult.Select(s => s).First());
+                            //curResult = curResult.Where(Expression.Lambda<Func<Dictionary<string, object>, bool>>(exp, param).Compile()).ToList();
+
+                            //curResult = curResult.ToList();
+                            //curResult = curResult.Where(s => f.Values.Contains(s[f.ColName].ToString()));
+
+                            //curResult = curResult.Where(s => f.Values.Contains(s.Keys.Where(si=>si.ToString() == f.ColName).FirstOrDefault() != null));
+
+                            //var methodInfo = typeof(List<string>).GetMethod("Contains", new Type[] { typeof(string) });
+                            //var list = Expression.Constant(f.Values);
+
+                            //var parameter = Expression.Parameter(typeof(Dictionary<string, object>), "x");
+                            //var comparison = Expression.Equal(Expression.Property("Keys"),;
+
+                            //var param = Expression.Parameter(typeof(Dictionary<string, object>), "t");
+                            //Expression.Equal(Expression.PropertyOrField(param, "[ename]"), Expression.Constant("ename"));
+                            //var body = Expression.AndAlso(
+                            //    Expression.Equal(Expression.PropertyOrField(param, "Keys"), Expression.Constant("email@domain.com")),
+                            //    Expression.Call(Expression.PropertyOrField(param, "Email"), "Contains", null, Expression.Constant("mydomain"))
+                            //);
+
+
+                            //Working as expected but multile times look for each filter start        *********8           
+                            Expression<Func<Dictionary<string, object>, bool>> expFilter = s => f.Values.Contains(s[f.ColName].ToString());                           
+                            Func<Dictionary<string, object>, bool> expFilter1 = expFilter.Compile();                            
+                            curResult = curResult.Where(expFilter1);
+                            //Working as expected but multile times look for each filter end
+
                         }
+                        //foreach (var e in exp)
+                        //{
+                        //    e.A
+                        //}
+                        //curResult = curResult.Where(isTeenAger);
+
                         curResult = curResult.ToList();
+
+                        //var personP = Expression.Parameter(typeof(Dictionary<string, object>), "xy");
+                        //var anyMethodInfo = typeof(Enumerable).GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)
+                        //.Where(m => m.Name == "Any" && m.IsGenericMethod) // Search for Any methods...
+                        //.Select(m => new
+                        //{
+                        //    Method = m,
+                        //    Params = m.GetParameters(),
+                        //    Args = m.GetGenericArguments()
+                        //})
+                        //.Where(x => x.Args.Length == 1
+                        //    && x.Params.Length == 2
+                        //    && x.Params[0].ParameterType == typeof(IEnumerable<>).MakeGenericType(x.Args)
+                        //    && x.Params[1].ParameterType == typeof(Func<,>).MakeGenericType(new Type[] { x.Args.First(), typeof(bool) })) // Get the one defined as Any<TSource>(IEnumerable<TSource>, Func<TSource, bool>)
+                        //.Select(x => x.Method)
+                        //.First();
+                        
+                       
+                        //var ValueProp = Expression.Property(keyValuePairP, "Value");                         // Creates x.Value
+                        //var valueComparisonValue = Expression.Constant("name 0");                           // Creates the value that will be compared to x.Value
+                        //var valueComparison = Expression.Equal(ValueProp, valueComparisonValue);             // Creates the comparison (x.Value == "Madurai")
+
+                        //var anyPredicate = Expression.Lambda(keyComparison, keyValuePairP); // Creates x => x.Key == "PlaceOfBirth" && x.Value == "Madurai"
+
+                        ////anyPredicate(curResult);
+                        //var filterMeMethod = Expression.Lambda<Func<Dictionary<string, object>, bool>>
+                        //    (Expression.Call(anyMethodInfo.MakeGenericMethod(new Type[] { typeof(Dictionary<string, object>) })
+                        //                    , new Expression[] { anyPredicate })
+                        //     , personP);  //Creates xy => xy.SecQuestions.Any(x => x.Key == "PlaceOfBirth" && x.Value == "Madurai")
+
+                        //var r1 = filterMeMethod.Compile()(curResult.First());
                     }
                 }
 
@@ -637,56 +732,7 @@ namespace ColumnStore
             return queryResult;
         }
 
-        private static Expression GetExpression<T>(ParameterExpression param, Filter filter)
-        {
-
-            ParameterExpression valueBag = Expression.Parameter(typeof(Dictionary<string, object>), "ename");
-            ParameterExpression key = Expression.Parameter(typeof(string), "key");
-            ParameterExpression result = Expression.Parameter(typeof(object), "result");
-            BlockExpression block = Expression.Block(
-              new[] { result },               //make the result a variable in scope for the block           
-              Expression.Assign(result, Expression.Property(valueBag, "Item", key)),
-              result                          //last value Expression becomes the return of the block 
-            );
-            return result;
-            //// The member you want to evaluate (x => x.FirstName)
-            //MemberExpression member = Expression.Property(param, filter.ColName);
-
-            //// The value you want to evaluate
-            //ConstantExpression constant = Expression.Constant(filter.Values);
-
-            //return Expression.Equal(member, constant);
-            // Determine how we want to apply the expression
-            //switch (filter.Operator)
-            //{
-            //    case GridHelper.Operator.Equals:
-            //        return Expression.Equal(member, constant);
-
-            //    case GridHelper.Operator.Contains:
-            //        return Expression.Call(member, containsMethod, constant);
-
-            //    case GridHelper.Operator.GreaterThan:
-            //        return Expression.GreaterThan(member, constant);
-
-            //    case GridHelper.Operator.GreaterThanOrEqual:
-            //        return Expression.GreaterThanOrEqual(member, constant);
-
-            //    case GridHelper.Operator.LessThan:
-            //        return Expression.LessThan(member, constant);
-
-            //    case GridHelper.Operator.LessThanOrEqualTo:
-            //        return Expression.LessThanOrEqual(member, constant);
-
-            //    case GridHelper.Operator.StartsWith:
-            //        return Expression.Call(member, startsWithMethod, constant);
-
-            //    case GridHelper.Operator.EndsWith:
-            //        return Expression.Call(member, endsWithMethod, constant);
-            //}
-
-            //return null;
-        }
-
+       
         private void GetQueryJoinResult(IntermidiateQueryResult firstTableResult, IntermidiateQueryResult secondTableResult, string keyField, IntermidiateQueryResult tempQResult, QueryParam queryParam, bool isFirtsTime = true)
         {
             try
