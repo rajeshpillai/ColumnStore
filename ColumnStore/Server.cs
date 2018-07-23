@@ -130,7 +130,7 @@ namespace ColumnStore
                 data.Add("salary", i + 100);
                 //table.Data2.Add(i.ToString(), data);
 
-                table.Data3.Add(data);
+                table.Data.Add(data);
             }
 
             //var data111 = new Dictionary<string, object>();
@@ -210,7 +210,7 @@ namespace ColumnStore
                 data.Add("industryid", i.ToString());              
                 //table.Data2.Add(i.ToString(), data);
 
-                table.Data3.Add(data);
+                table.Data.Add(data);
             }
 
             //var data111 = new Dictionary<string, object>();
@@ -257,7 +257,7 @@ namespace ColumnStore
                 data.Add("industryname", (i % 2 == 0 ? "microsoft" : "ibm"));               
                 //table.Data2.Add(i.ToString(), data);
 
-                table.Data3.Add(data);
+                table.Data.Add(data);
 
             }
 
@@ -367,23 +367,14 @@ namespace ColumnStore
         public Table(string name)
         {
             this.Name = name;
-            this.Columns = new Dictionary<string, Column>();
-            this.Data = new List<dynamic>();
-            this.Data1 = new Dictionary<string, object>();
-            this.Data2 = new Dictionary<string, Dictionary<string, object>>();
-            this.Data3 = new List<Dictionary<string, object>>();
+            this.Columns = new Dictionary<string, Column>();           
+            this.Data = new List<Dictionary<string, object>>();
         }
         public string Name { get; set; }
 
-        public List<dynamic> Data { get; set; }
-
-        public Dictionary<string,object> Data1 { get; set; }
-
-        public Dictionary<string, Dictionary<string, object>> Data2 { get; set; }
-
         public Dictionary<string, Column> Columns { get; set; }
 
-        public List<Dictionary<string, object>> Data3 { get; set; }
+        public List<Dictionary<string, object>> Data { get; set; }
 
         public int RowCount { get; set; }
 
@@ -424,7 +415,7 @@ namespace ColumnStore
 
             if (tables.Count() == 1)
             {
-                result = tables[0].Data3;
+                result = tables[0].Data;
                 foreach (Filter f in queryParam.Filters)
                 {
                     var methodInfo = typeof(Dictionary<string, object>).GetMethod("get_Item", new Type[] { typeof(string) });
@@ -470,8 +461,8 @@ namespace ColumnStore
                 var keyFieldList = GetKeyFields(table, nextTable);
                 var key = keyFieldList[0];
 
-                IEnumerable<Dictionary<string, object>> curResult = (result != null) ? result : table.Data3;
-                IEnumerable<Dictionary<string, object>> nextResult = nextTable.Data3;
+                IEnumerable<Dictionary<string, object>> curResult = (result != null) ? result : table.Data;
+                IEnumerable<Dictionary<string, object>> nextResult = nextTable.Data;
                 
                 //Check if filter is from current table?
                 bool isFilterinCurTable = false;
