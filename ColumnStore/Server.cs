@@ -57,7 +57,7 @@ namespace ColumnStore
             query.Dimensions.Add(new Dimension() { Name = "industryname", TableName = "industry" });
 
             query.Filters.Add(new Filter() { ColName = "ename", Values = new string[1] { "name 0" } , TableName = "employees" });
-            //query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" }, TableName = "employees" });
+            query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" }, TableName = "employees" });
             //query.Filters.Add(new Filter() { ColName = "skill", Values = new string[1] { "sql" }, TableName = "skills" });
             //query.Filters.Add(new Filter() { ColName = "industryname", Values = new string[1] { "ibm" }, TableName = "industry" });
 
@@ -437,6 +437,7 @@ namespace ColumnStore
                     isFilterinCurTable = (curFilters.Count() > 0);
                     if (isFilterinCurTable)
                     {
+                        Func<Dictionary<string, object>, bool> filterExpression = null;
                         //List<Func<Dictionary<string, object>, bool>> exp = new List<Expression>();
                         foreach (Filter f in curFilters)
                         {
@@ -506,15 +507,18 @@ namespace ColumnStore
                             var value = Expression.Constant("ename");
                             var body = Expression.Convert(Expression.Call(parameter, methodInfo, value), typeof(string));
 
-                            //var containMethodInfo = typeof(List<string>).GetMethod("Contains", new Type[] { typeof(string) });
-                            //var list = Expression.Constant(f.Values);
-                            ////var body2 = Expression.Call(list, methodInfo, body);
+                            var containMethodInfo = typeof(List<string>).GetMethod("Contains", new Type[] { typeof(string) });
+                            var list = Expression.Constant(f.Values.ToList());                            
 
-                            var nameValue = Expression.Constant("name 0");
-                            var binExp =  Expression.Equal(body, nameValue);
-                            Func<Dictionary<string, object>, bool> filterExpression = Expression.Lambda<Func<Dictionary<string, object>, bool>>(binExp, parameter).Compile();
-                            var tResult = curResult.Where(filterExpression).ToList();
-                        
+                            var body2 = Expression.Call(list, containMethodInfo, body);
+
+                           
+
+
+                           //var nameValue = Expression.Constant("name 0");
+                           //var binExp =  Expression.Equal(body, nameValue);
+                           filterExpression = Expression.Lambda<Func<Dictionary<string, object>, bool>>(body2, parameter).Compile();
+                            
 
                             //var innerExpression = Expression.Call(methodInfo, new Expression[] { nameValue });
 
@@ -556,6 +560,9 @@ namespace ColumnStore
 
 
                         }
+
+                        var tResult = curResult.Where(filterExpression).ToList();
+
                         //foreach (var e in exp)
                         //{
                         //    e.A
