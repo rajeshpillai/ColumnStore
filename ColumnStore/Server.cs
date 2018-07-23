@@ -54,11 +54,11 @@ namespace ColumnStore
             query.Dimensions.Add(new Dimension() { Name = "ename", TableName="employees" });
             //query.Dimensions.Add(new Dimension() { Name = "city", TableName = "employees" });
             query.Dimensions.Add(new Dimension() { Name = "skill", TableName = "skills" });
-            //query.Dimensions.Add(new Dimension() { Name = "industryname", TableName = "industry" });
+            query.Dimensions.Add(new Dimension() { Name = "industryname", TableName = "industry" });
 
             query.Filters.Add(new Filter() { ColName = "ename", Values = new string[1] { "name 0" } , TableName = "employees" });
-            query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" }, TableName = "employees" });
-            //query.Filters.Add(new Filter() { ColName = "skill", Values = new string[1] { "nodejs" }, TableName = "skills" });
+            //query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" }, TableName = "employees" });
+            //query.Filters.Add(new Filter() { ColName = "skill", Values = new string[1] { "sql" }, TableName = "skills" });
             //query.Filters.Add(new Filter() { ColName = "industryname", Values = new string[1] { "ibm" }, TableName = "industry" });
 
             var result = db.Query(query);
@@ -430,6 +430,7 @@ namespace ColumnStore
                 
                 //Check if filter is from current table?
                 bool isFilterinCurTable = false;
+                //Func<T, object> pkFieldExpression;
                 if (t== 0)
                 {
                     var curFilters = queryParam.Filters.Where(f => f.TableName == table.Name).ToList();
@@ -478,15 +479,60 @@ namespace ColumnStore
                             //curResult = curResult.ToList();
                             //curResult = curResult.Where(s => f.Values.Contains(s[f.ColName].ToString()));
 
-                            //curResult = curResult.Where(s => f.Values.Contains(s.Keys.Where(si=>si.ToString() == f.ColName).FirstOrDefault() != null));
+
+                            //var index = -1;
+                            //var ki = 0;
+                            //foreach(var key1 in curResult.First().Keys)
+                            //{
+                            //    if("ename" == key1)
+                            //    {
+                            //        index = ki;
+                            //        break;
+                            //    }
+                            //    ki++;
+                            //}
+
+
+
+                            //curResult = curResult.Where(s => f.Values.Contains(s.Values.ElementAt(index)));
+
+                            //curResult = curResult.Where(s => f.Values.Contains(s.Keys.Where(d=>d.ToString() == "ename").First()));
 
                             //var methodInfo = typeof(List<string>).GetMethod("Contains", new Type[] { typeof(string) });
                             //var list = Expression.Constant(f.Values);
 
-                            //var parameter = Expression.Parameter(typeof(Dictionary<string, object>), "x");
-                            //var comparison = Expression.Equal(Expression.Property("Keys"),;
+                            var parameter = Expression.Parameter(typeof(Dictionary<string, object>), "x");
+                            var methodInfo = typeof(Dictionary<string, object>).GetMethod("get_Item", new Type[] { typeof(string)});
+                            var value = Expression.Constant("ename");
+                            var body = Expression.Convert(Expression.Call(parameter, methodInfo, value), typeof(string));
 
-                            //var param = Expression.Parameter(typeof(Dictionary<string, object>), "t");
+                            //var containMethodInfo = typeof(List<string>).GetMethod("Contains", new Type[] { typeof(string) });
+                            //var list = Expression.Constant(f.Values);
+                            ////var body2 = Expression.Call(list, methodInfo, body);
+
+                            var nameValue = Expression.Constant("name 0");
+                            var binExp =  Expression.Equal(body, nameValue);
+                            Func<Dictionary<string, object>, bool> filterExpression = Expression.Lambda<Func<Dictionary<string, object>, bool>>(binExp, parameter).Compile();
+                            var tResult = curResult.Where(filterExpression).ToList();
+                        
+
+                            //var innerExpression = Expression.Call(methodInfo, new Expression[] { nameValue });
+
+                            //Expression.Call(containMethodInfo, innerExpression);
+
+                            //body
+
+                            //var list = Expression.Constant(index);
+                            //var param = Expression.Parameter(typeof(Dictionary<string, object>), "j");
+                            //var value = Expression.Property(param, "Values");
+                            //var body = Expression.Call(list, methodInfo, value);
+                            //Expression.Call()
+
+
+
+                            //var comparison = Expression.Equal(Expression.Property("Values"),;
+
+                            //var param = Expression.Parameter(typeof(Dictionary<string, object>), "s");
                             //Expression.Equal(Expression.PropertyOrField(param, "[ename]"), Expression.Constant("ename"));
                             //var body = Expression.AndAlso(
                             //    Expression.Equal(Expression.PropertyOrField(param, "Keys"), Expression.Constant("email@domain.com")),
@@ -494,11 +540,20 @@ namespace ColumnStore
                             //);
 
 
-                            //Working as expected but multile times look for each filter start        *********8           
-                            Expression<Func<Dictionary<string, object>, bool>> expFilter = s => f.Values.Contains(s[f.ColName].ToString());                           
-                            Func<Dictionary<string, object>, bool> expFilter1 = expFilter.Compile();                            
-                            curResult = curResult.Where(expFilter1);
-                            //Working as expected but multile times look for each filter end
+                            //Func<Dictionary<string, object>, object> pkFieldExpression = (c) => c[f.ColName];
+                            //Expression entity = Expression.Parameter(typeof(Dictionary<string, object>), "c");
+                            //Expression keyValue = Expression.Property(entity, "Keys");
+                            //Expression pkValue = Expression.Constant(pkFieldExpression, keyValue.Type);
+                            //Expression body = Expression.Equal(keyValue, pkValue);
+
+                            ////Working as expected but multile times look for each filter start        *********8           
+                            //Expression<Func<Dictionary<string, object>, bool>> expFilter = s => 
+                            //                                f.Values.Contains(s[f.ColName].ToString());                           
+                            //Func<Dictionary<string, object>, bool> expFilter1 = expFilter.Compile();                            
+                            //curResult = curResult.Where(expFilter1);
+                            ////Working as expected but multile times look for each filter end
+
+
 
                         }
                         //foreach (var e in exp)
@@ -561,7 +616,10 @@ namespace ColumnStore
                     }
                     nextResult = nextResult.ToList();
 
-                   result = curResult.InnerJoin(
+                    if (isFilterinCurTable)
+                    {
+                        //inner join
+                        result = curResult.InnerJoin(
                    nextResult, a => a[key], b => b[key], (a, b, qResult1) =>
                    {
                        var x = new Dictionary<string, Object>();
@@ -605,10 +663,59 @@ namespace ColumnStore
                        }
                        return x;
                    }).ToList();
+                    } else
+                    {
+                        //right outer join
+                        result = curResult.RightOuterJoin(
+                   nextResult, a => a[key], b => b[key], (a, b, qResult1) =>
+                   {
+                       var x = new Dictionary<string, Object>();
+                       if (null == a)
+                       {
+                           foreach (var col in table.Columns)
+                           {
+                               if (!b.ContainsKey(col.Key))
+                               {
+                                   b.Add(col.Key, "");
+                               }
+                           }
+                           x = b;
+                           //x.Add(b.Key, b.Value);
+                       }
+                       else if (null == b)
+                       {
+                           x = a;
+                           foreach (var col in nextTable.Columns)
+                           {
+                               if (!x.ContainsKey(col.Key))
+                               {
+                                   x.Add(col.Key, "");
+                               }
+                           }
+                           //x = a.Value;
+                       }
+                       else
+                       {
+                           //prevResult.Values.
+
+                           foreach (var k in b.Keys)
+                           {
+                               if (!a.ContainsKey(k))
+                               {
+                                   a.Add(k, b[k]);
+                               }
+                           }
+                           x = a;
+                           //x.Add(a.Key, a.Value);
+                       }
+                       return x;
+                   }).ToList();
+                    }
+                   
                 }
                 else
                 {
-                    if (isFilterinCurTable)
+                    if (queryParam.Filters.Count() >0)
                     {
                         //left outerjoin
                         result = curResult.LeftOuterJoin(
@@ -1274,6 +1381,31 @@ namespace ColumnStore
             var blookup = b.ToLookup(selectKeyB, cmp);
 
             var keys = new HashSet<TKey>(alookup.Select(p => p.Key), cmp);
+            //keys = keys.Intersect(blookup.Select(p => p.Key)).ToHashSet<TKey>();
+
+            var join = from key in keys
+                       from xa in alookup[key].DefaultIfEmpty(defaultA)
+                       from xb in blookup[key].DefaultIfEmpty(defaultB)
+                       select projection(xa, xb, key);
+
+            return join;
+        }
+
+        internal static IEnumerable<TResult> RightOuterJoin<TA, TB, TKey, TResult>(
+                    this IEnumerable<TA> a,
+                    IEnumerable<TB> b,
+                    Func<TA, TKey> selectKeyA,
+                    Func<TB, TKey> selectKeyB,
+                    Func<TA, TB, TKey, TResult> projection,
+                    TA defaultA = default(TA),
+                    TB defaultB = default(TB),
+                    IEqualityComparer<TKey> cmp = null)
+        {
+            cmp = cmp ?? EqualityComparer<TKey>.Default;
+            var alookup = a.ToLookup(selectKeyA, cmp);
+            var blookup = b.ToLookup(selectKeyB, cmp);
+
+            var keys = new HashSet<TKey>(blookup.Select(p => p.Key), cmp);
             //keys = keys.Intersect(blookup.Select(p => p.Key)).ToHashSet<TKey>();
 
             var join = from key in keys
