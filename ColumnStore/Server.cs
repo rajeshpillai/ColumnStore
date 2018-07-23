@@ -13,7 +13,7 @@ namespace ColumnStore
     class Server
     {
         static Database db = null;
-        static int tableRowCount = 1000000;
+        static int tableRowCount = 5;
 
         static void Main(string[] args)
         {
@@ -27,7 +27,7 @@ namespace ColumnStore
             db = new Database();
             BuildEmployeeTable(db);
             BuildSkillsTable(db);
-            BuildIndustryTable(db);
+            //BuildIndustryTable(db);
 
            // BuildSymbolTable(db);
 
@@ -52,16 +52,16 @@ namespace ColumnStore
             //query.Dimensions.Add("city");
 
             query.Dimensions.Add(new Dimension() { Name = "ename", TableName="employees" });
-            //query.Dimensions.Add(new Dimension() { Name = "city", TableName = "employees" });
+            query.Dimensions.Add(new Dimension() { Name = "city", TableName = "employees" });
             query.Dimensions.Add(new Dimension() { Name = "skill", TableName = "skills" });
-            query.Dimensions.Add(new Dimension() { Name = "industryname", TableName = "industry" });
+            //query.Dimensions.Add(new Dimension() { Name = "industryname", TableName = "industry" });
 
             //query.Filters.Add(new Filter() { ColName = "ename", Values = new string[1] { "name 0" } , TableName = "employees" });
-            query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" }, TableName = "employees" });
+            //query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" }, TableName = "employees" });
             //query.Filters.Add(new Filter() { ColName = "skill", Values = new string[1] { "sql" }, TableName = "skills" });
-            query.Filters.Add(new Filter() { ColName = "industryname", Values = new string[1] { "microsoft" }, TableName = "industry" });
+            //query.Filters.Add(new Filter() { ColName = "industryname", Values = new string[1] { "microsoft" }, TableName = "industry" });
 
-            var result = db.Query(query);
+            var result = db.Query(query);            
            // Console.WriteLine(JsonConvert.SerializeObject(result));
         }
 
@@ -105,21 +105,21 @@ namespace ColumnStore
 
             for (int i = 0; i < tableRowCount; i++)
             {
-                table.Data.Add(new
-                {
-                    ename = "name " + i.ToString(),
-                    city = (i % 2 == 0 ? "mumbai" : "chennai"),
-                    empid = i.ToString(),
-                    salary = i + 100
-                });
+                //table.Data.Add(new
+                //{
+                //    ename = "name " + i.ToString(),
+                //    city = (i % 2 == 0 ? "mumbai" : "chennai"),
+                //    empid = i.ToString(),
+                //    salary = i + 100
+                //});
 
-                table.Data1.Add(i.ToString(),new
-                {
-                    ename = "name " + i.ToString(),
-                    city = (i % 2 == 0 ? "mumbai" : "chennai"),
-                    empid = i.ToString(),
-                    salary = i + 100
-                });
+                //table.Data1.Add(i.ToString(),new
+                //{
+                //    ename = "name " + i.ToString(),
+                //    city = (i % 2 == 0 ? "mumbai" : "chennai"),
+                //    empid = i.ToString(),
+                //    salary = i + 100
+                //});
 
 
 
@@ -128,7 +128,7 @@ namespace ColumnStore
                 data.Add("city", (i % 2 == 0 ? "mumbai" : "chennai"));
                 data.Add("empid", i.ToString());
                 data.Add("salary", i + 100);
-                table.Data2.Add(i.ToString(), data);
+                //table.Data2.Add(i.ToString(), data);
 
                 table.Data3.Add(data);
             }
@@ -190,25 +190,25 @@ namespace ColumnStore
 
             for (int i = 0; i < tableRowCount; i++)
             {
-                table.Data.Add(new
-                {
-                    empid = i.ToString(),
-                    skill = i % 2 == 0 ? "nodejs" : ".net",                    
-                    industryid = "i" + i.ToString()
-                });
+                //table.Data.Add(new
+                //{
+                //    empid = i.ToString(),
+                //    skill = i % 2 == 0 ? "nodejs" : ".net",                    
+                //    industryid = "i" + i.ToString()
+                //});
 
-                table.Data1.Add(i.ToString(), new
-                {
-                    empid = i.ToString(),
-                    skill = i % 2 == 0 ? "nodejs" : ".net",
-                    industryid = "i" + i.ToString()
-                });
+                //table.Data1.Add(i.ToString(), new
+                //{
+                //    empid = i.ToString(),
+                //    skill = i % 2 == 0 ? "nodejs" : ".net",
+                //    industryid = "i" + i.ToString()
+                //});
 
                 var data = new Dictionary<string, object>();
                 data.Add("empid", i.ToString());
                 data.Add("skill", i % 2 == 0 ? "nodejs" : ".net");
                 data.Add("industryid", i.ToString());              
-                table.Data2.Add(i.ToString(), data);
+                //table.Data2.Add(i.ToString(), data);
 
                 table.Data3.Add(data);
             }
@@ -245,17 +245,17 @@ namespace ColumnStore
 
             for (int i = 0; i < tableRowCount; i++)
             {
-                table.Data.Add(new
-                {
-                    industryid = i.ToString(),
-                    industryname = i % 2 == 0 ? "microsoft" : "ibm"
-                });
+                //table.Data.Add(new
+                //{
+                //    industryid = i.ToString(),
+                //    industryname = i % 2 == 0 ? "microsoft" : "ibm"
+                //});
 
 
                 var data = new Dictionary<string, object>();
                 data.Add("industryid",  i.ToString());
                 data.Add("industryname", (i % 2 == 0 ? "microsoft" : "ibm"));               
-                table.Data2.Add(i.ToString(), data);
+                //table.Data2.Add(i.ToString(), data);
 
                 table.Data3.Add(data);
 
@@ -417,8 +417,52 @@ namespace ColumnStore
             var tables =  GetTablesInvoled(queryParam);
             bool isPrevFilterApplied = false;
 
-            List<Dictionary<string, object>> result = null;
-           
+            IEnumerable<Dictionary<string, object>> result = null;
+            Func<Dictionary<string, object>, bool> filterExpression = null;
+            List<Expression> expList = new List<Expression>();
+            var parameter = Expression.Parameter(typeof(Dictionary<string, object>), "x");
+
+            if (tables.Count() == 1)
+            {
+                result = tables[0].Data3;
+                foreach (Filter f in queryParam.Filters)
+                {
+                    var methodInfo = typeof(Dictionary<string, object>).GetMethod("get_Item", new Type[] { typeof(string) });
+                    var value = Expression.Constant(f.ColName);
+                    var body = Expression.Convert(Expression.Call(parameter, methodInfo, value), typeof(string));
+
+                    var containMethodInfo = typeof(List<string>).GetMethod("Contains", new Type[] { typeof(string) });
+                    var list = Expression.Constant(f.Values.ToList());
+
+                    var body2 = Expression.Call(list, containMethodInfo, body);
+                    expList.Add(body2);
+
+                    ////Working as expected but multile times look for each filter start        *********8           
+                    //Expression<Func<Dictionary<string, object>, bool>> expFilter = s => 
+                    //                                f.Values.Contains(s[f.ColName].ToString());                           
+                    //Func<Dictionary<string, object>, bool> expFilter1 = expFilter.Compile();                            
+                    //curResult = curResult.Where(expFilter1);
+                    ////Working as expected but multile times look for each filter end
+                }
+                if (expList.Count() > 0)
+                {
+                    Expression finalExpression = expList[0];
+                    for (int e = 0; e < expList.Count() - 1; e++)
+                    {
+                        finalExpression = Expression.AndAlso(expList[e], expList[e + 1]);
+                    }
+
+                    filterExpression = Expression.Lambda<Func<Dictionary<string, object>, bool>>(finalExpression, parameter).Compile();
+                    result = result.Where(filterExpression);
+                }
+                queryResult.Result1 = result;
+
+                watch.Stop();
+                Console.WriteLine(watch.Elapsed);
+                Console.WriteLine(result.Count());
+                return queryResult;            
+            }
+
             for (int t = 0; t < tables.Count()-1; t++)
             {
                 var table = tables[t];
@@ -439,9 +483,7 @@ namespace ColumnStore
                     if (isFilterinCurTable)
                     {
                         isPrevFilterApplied = true;
-                        Func<Dictionary<string, object>, bool> filterExpression = null;
-                        List<Expression> expList = new List<Expression>();
-                        var parameter = Expression.Parameter(typeof(Dictionary<string, object>), "x");
+                        
                         foreach (Filter f in curFilters)
                         {
                             var methodInfo = typeof(Dictionary<string, object>).GetMethod("get_Item", new Type[] { typeof(string)});
@@ -471,7 +513,7 @@ namespace ColumnStore
                             }
 
                             filterExpression = Expression.Lambda<Func<Dictionary<string, object>, bool>>(finalExpression, parameter).Compile();
-                            curResult = curResult.Where(filterExpression).ToList();
+                            curResult = curResult.Where(filterExpression);
                         }                       
                     }
                 }
@@ -493,7 +535,7 @@ namespace ColumnStore
                         //var exp1 = exp;
                         nextResult = nextResult.Where(s => f.Values.Contains(s[f.ColName].ToString()));
                     }
-                    nextResult = nextResult.ToList();
+                    //nextResult = nextResult.ToList();
 
                     if (isFilterinCurTable || (nextFilters.Count() >0 && isPrevFilterApplied))
                     {
@@ -541,7 +583,7 @@ namespace ColumnStore
                            //x.Add(a.Key, a.Value);
                        }
                        return x;
-                   }).ToList();
+                   });
                     } else
                     {
                         //right outer join
@@ -588,7 +630,7 @@ namespace ColumnStore
                            //x.Add(a.Key, a.Value);
                        }
                        return x;
-                   }).ToList();
+                   });
                     }
                    
                 }
@@ -640,7 +682,7 @@ namespace ColumnStore
                                //x.Add(a.Key, a.Value);
                            }
                            return x;
-                       }).ToList();
+                       });
                     }
                     else
                     {
@@ -688,7 +730,7 @@ namespace ColumnStore
                                //x.Add(a.Key, a.Value);
                            }
                            return x;
-                       }).ToList();
+                       });
                     }
                     
                     
@@ -715,8 +757,59 @@ namespace ColumnStore
 
             watch.Stop();
             Console.WriteLine(watch.Elapsed);
+            Console.WriteLine(result.Count());
             return queryResult;
         }
+
+        //private IDictionary<string,object> ApplyFullOuterJoins(IEnumerable<IDictionary<string, object>> curResult, IEnumerable<IDictionary<string,object>> nextResult, string key)
+        //{
+        //    IDictionary<string, object> query = curResult.FullOuterJoin(
+        //               nextResult, a => a[key], b => b[key], (a, b, qResult1) =>
+        //               {
+        //                   var x = new Dictionary<string, Object>();
+        //                   if (null == a)
+        //                   {
+        //                       foreach (var col in table.Columns)
+        //                       {
+        //                           if (!b.ContainsKey(col.Key))
+        //                           {
+        //                               b.Add(col.Key, "");
+        //                           }
+        //                       }
+        //                       x = b;
+        //                       //x.Add(b.Key, b.Value);
+        //                   }
+        //                   else if (null == b)
+        //                   {
+        //                       x = a;
+        //                       foreach (var col in nextTable.Columns)
+        //                       {
+        //                           if (!x.ContainsKey(col.Key))
+        //                           {
+        //                               x.Add(col.Key, "");
+        //                           }
+        //                       }
+        //                       //x = a.Value;
+        //                   }
+        //                   else
+        //                   {
+        //                       //prevResult.Values.
+
+        //                       foreach (var k in b.Keys)
+        //                       {
+        //                           if (!a.ContainsKey(k))
+        //                           {
+        //                               a.Add(k, b[k]);
+        //                           }
+        //                       }
+        //                       x = a;
+        //                       //x.Add(a.Key, a.Value);
+        //                   }
+        //                   return x;
+        //               });
+
+        //    return query;
+        //}
 
        
         private void GetQueryJoinResult(IntermidiateQueryResult firstTableResult, IntermidiateQueryResult secondTableResult, string keyField, IntermidiateQueryResult tempQResult, QueryParam queryParam, bool isFirtsTime = true)
@@ -1213,11 +1306,13 @@ namespace ColumnStore
             keys.UnionWith(blookup.Select(p => p.Key));
 
             var join = from key in keys
-                       from xa in alookup[key].DefaultIfEmpty(defaultA)
+                       from xa in alookup[key].DefaultIfEmpty(defaultA).AsParallel()
                        from xb in blookup[key].DefaultIfEmpty(defaultB)
                        select projection(xa, xb, key);
 
-            return join;
+            return join.AsParallel().
+                      WithDegreeOfParallelism(8).
+                       WithExecutionMode(ParallelExecutionMode.ForceParallelism);
         }
 
         internal static IEnumerable<TResult> InnerJoin<TA, TB, TKey, TResult>(
@@ -1330,15 +1425,15 @@ namespace ColumnStore
             this.Result = new Dictionary<string, List<object>>();
         }
 
-        public List<string> ColumnNames { get; set; }
+        public IEnumerable<string> ColumnNames { get; set; }
 
-        public List<List<object>> Values { get; set; }
+        public IEnumerable<List<object>> Values { get; set; }
 
         public Dictionary<string,string> KeyFields { get; set; }
 
         public Dictionary<string, List<object>> Result { get; set; }
 
-        public List<Dictionary<string, object>> Result1 { get; set; }
+        public IEnumerable<Dictionary<string, object>> Result1 { get; set; }
 
 
     }
