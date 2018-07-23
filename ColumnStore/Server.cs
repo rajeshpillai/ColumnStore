@@ -13,7 +13,7 @@ namespace ColumnStore
     class Server
     {
         static Database db = null;
-        static int tableRowCount = 5;
+        static int tableRowCount = 1000000;
 
         static void Main(string[] args)
         {
@@ -56,10 +56,10 @@ namespace ColumnStore
             query.Dimensions.Add(new Dimension() { Name = "skill", TableName = "skills" });
             query.Dimensions.Add(new Dimension() { Name = "industryname", TableName = "industry" });
 
-            query.Filters.Add(new Filter() { ColName = "ename", Values = new string[1] { "name 0" } , TableName = "employees" });
+            //query.Filters.Add(new Filter() { ColName = "ename", Values = new string[1] { "name 0" } , TableName = "employees" });
             query.Filters.Add(new Filter() { ColName = "city", Values = new string[1] { "mumbai" }, TableName = "employees" });
             //query.Filters.Add(new Filter() { ColName = "skill", Values = new string[1] { "sql" }, TableName = "skills" });
-            //query.Filters.Add(new Filter() { ColName = "industryname", Values = new string[1] { "ibm" }, TableName = "industry" });
+            query.Filters.Add(new Filter() { ColName = "industryname", Values = new string[1] { "microsoft" }, TableName = "industry" });
 
             var result = db.Query(query);
            // Console.WriteLine(JsonConvert.SerializeObject(result));
@@ -133,13 +133,13 @@ namespace ColumnStore
                 table.Data3.Add(data);
             }
 
-            var data111 = new Dictionary<string, object>();
-            data111.Add("ename", "name " + "0".ToString());
-            data111.Add("city", (6 % 2 == 0 ? "mumbai" : "chennai"));
-            data111.Add("empid", "6");
-            data111.Add("salary", 6 + 100);
-            //table.Data2.Add("6", data111);
-            table.Data3.Add(data111);
+            //var data111 = new Dictionary<string, object>();
+            //data111.Add("ename", "name " + "0".ToString());
+            //data111.Add("city", (6 % 2 == 0 ? "mumbai" : "chennai"));
+            //data111.Add("empid", "6");
+            //data111.Add("salary", 6 + 100);
+            ////table.Data2.Add("6", data111);
+            //table.Data3.Add(data111);
 
 
             //for (int i = 5; i < 6; i++)
@@ -213,12 +213,12 @@ namespace ColumnStore
                 table.Data3.Add(data);
             }
 
-            var data111 = new Dictionary<string, object>();
-            data111.Add("empid", "7");
-            data111.Add("skill", 7 % 2 == 0 ? "expressjs" : "sql");
-            data111.Add("industryid", "6");
-            //table.Data2.Add("7", data111);
-            table.Data3.Add(data111);
+            //var data111 = new Dictionary<string, object>();
+            //data111.Add("empid", "7");
+            //data111.Add("skill", 7 % 2 == 0 ? "expressjs" : "sql");
+            //data111.Add("industryid", "6");
+            ////table.Data2.Add("7", data111);
+            //table.Data3.Add(data111);
 
             //for (int i = 0; i < 1; i++)
             //{
@@ -415,6 +415,7 @@ namespace ColumnStore
             //int[] matchedIndexes = null;
 
             var tables =  GetTablesInvoled(queryParam);
+            bool isPrevFilterApplied = false;
 
             List<Dictionary<string, object>> result = null;
            
@@ -437,118 +438,21 @@ namespace ColumnStore
                     isFilterinCurTable = (curFilters.Count() > 0);
                     if (isFilterinCurTable)
                     {
+                        isPrevFilterApplied = true;
                         Func<Dictionary<string, object>, bool> filterExpression = null;
-                        //List<Func<Dictionary<string, object>, bool>> exp = new List<Expression>();
+                        List<Expression> expList = new List<Expression>();
+                        var parameter = Expression.Parameter(typeof(Dictionary<string, object>), "x");
                         foreach (Filter f in curFilters)
                         {
-                            //curResult.AsQueryable().Where("");
-                            //var parameter = Expression.Parameter(typeof(Dictionary<string, object>), "x");
-                            //Expression<Func<List<Dictionary<string, object>>, bool>> e1 = l => f.Values.Contains("name 0");
-                            //Func<Dictionary<string, object>, bool> discountFilterExpression = Expression.Lambda<Func<Dictionary<string, object>, bool>>(e1, parameter).Compile();
-                            //curResult = curResult.Where(discountFilterExpression);
-
-                            //var parameter = Expression.Parameter(typeof(Dictionary<string, object>), "x");
-                            //var comparison = Expression.Equal(Expression.ArrayIndex(parameter, Expression.Constant("ename")), Expression.Constant("name 0"));
-
-
-                            //var methodInfo = typeof(List<string>).GetMethod("Contains",new Type[] { typeof(string) });
-                            //var list = Expression.Constant(f.Values);
-                            //var param = Expression.Parameter(typeof(Dictionary<string, object>), "j");
-                            //var value = Expression.Property(param, "ename");
-                            //var body = Expression.Call(list, methodInfo, value);
-
-
-
-
-                            ////ParameterExpression ename = Expression.con.Parameter(typeof(Dictionary<string, object>), "parm");
-                            //var comparison = Expression.Equal(Expression. ArrayIndex(parameter, Expression.Constant("ename")), Expression.Constant("name 0"));
-                            //Func<Dictionary<string, object>, bool> discountFilterExpression = Expression.Lambda<Func<Dictionary<string, object>, bool>>(comparison, parameter).Compile();
-                            //var discountedAlbums = curResult.Where(discountFilterExpression);
-                            //var comparison = Expression.GreaterThan(Expression.Property(parameter, Type.GetType("ConsoleApp6.Album").GetProperty("Quantity")), Expression.Constant(100));
-
-                            //Func<Album, bool> discountFilterExpression = Expression.Lambda<Func<Album, bool>>(comparison, parameter).Compile();
-
-                            //var discountedAlbums = albums.Where(discountFilterExpression);
-
-                            //ParameterExpression param = Expression.Parameter(typeof(Dictionary<string, object>), "parm");
-                            //var exp = GetExpression<Dictionary<string, object>>(param, f);
-                            //var exp1 = exp;
-                            //var tt = Expression.Lambda<Func<Dictionary<string, object>, bool>>(exp, param).Compile();
-                            //tt(curResult.Select(s => s).First());
-                            //curResult = curResult.Where(Expression.Lambda<Func<Dictionary<string, object>, bool>>(exp, param).Compile()).ToList();
-
-                            //curResult = curResult.ToList();
-                            //curResult = curResult.Where(s => f.Values.Contains(s[f.ColName].ToString()));
-
-
-                            //var index = -1;
-                            //var ki = 0;
-                            //foreach(var key1 in curResult.First().Keys)
-                            //{
-                            //    if("ename" == key1)
-                            //    {
-                            //        index = ki;
-                            //        break;
-                            //    }
-                            //    ki++;
-                            //}
-
-
-
-                            //curResult = curResult.Where(s => f.Values.Contains(s.Values.ElementAt(index)));
-
-                            //curResult = curResult.Where(s => f.Values.Contains(s.Keys.Where(d=>d.ToString() == "ename").First()));
-
-                            //var methodInfo = typeof(List<string>).GetMethod("Contains", new Type[] { typeof(string) });
-                            //var list = Expression.Constant(f.Values);
-
-                            var parameter = Expression.Parameter(typeof(Dictionary<string, object>), "x");
                             var methodInfo = typeof(Dictionary<string, object>).GetMethod("get_Item", new Type[] { typeof(string)});
-                            var value = Expression.Constant("ename");
+                            var value = Expression.Constant(f.ColName);
                             var body = Expression.Convert(Expression.Call(parameter, methodInfo, value), typeof(string));
 
                             var containMethodInfo = typeof(List<string>).GetMethod("Contains", new Type[] { typeof(string) });
                             var list = Expression.Constant(f.Values.ToList());                            
 
                             var body2 = Expression.Call(list, containMethodInfo, body);
-
-                           
-
-
-                           //var nameValue = Expression.Constant("name 0");
-                           //var binExp =  Expression.Equal(body, nameValue);
-                           filterExpression = Expression.Lambda<Func<Dictionary<string, object>, bool>>(body2, parameter).Compile();
-                            
-
-                            //var innerExpression = Expression.Call(methodInfo, new Expression[] { nameValue });
-
-                            //Expression.Call(containMethodInfo, innerExpression);
-
-                            //body
-
-                            //var list = Expression.Constant(index);
-                            //var param = Expression.Parameter(typeof(Dictionary<string, object>), "j");
-                            //var value = Expression.Property(param, "Values");
-                            //var body = Expression.Call(list, methodInfo, value);
-                            //Expression.Call()
-
-
-
-                            //var comparison = Expression.Equal(Expression.Property("Values"),;
-
-                            //var param = Expression.Parameter(typeof(Dictionary<string, object>), "s");
-                            //Expression.Equal(Expression.PropertyOrField(param, "[ename]"), Expression.Constant("ename"));
-                            //var body = Expression.AndAlso(
-                            //    Expression.Equal(Expression.PropertyOrField(param, "Keys"), Expression.Constant("email@domain.com")),
-                            //    Expression.Call(Expression.PropertyOrField(param, "Email"), "Contains", null, Expression.Constant("mydomain"))
-                            //);
-
-
-                            //Func<Dictionary<string, object>, object> pkFieldExpression = (c) => c[f.ColName];
-                            //Expression entity = Expression.Parameter(typeof(Dictionary<string, object>), "c");
-                            //Expression keyValue = Expression.Property(entity, "Keys");
-                            //Expression pkValue = Expression.Constant(pkFieldExpression, keyValue.Type);
-                            //Expression body = Expression.Equal(keyValue, pkValue);
+                            expList.Add(body2);
 
                             ////Working as expected but multile times look for each filter start        *********8           
                             //Expression<Func<Dictionary<string, object>, bool>> expFilter = s => 
@@ -556,51 +460,19 @@ namespace ColumnStore
                             //Func<Dictionary<string, object>, bool> expFilter1 = expFilter.Compile();                            
                             //curResult = curResult.Where(expFilter1);
                             ////Working as expected but multile times look for each filter end
-
-
-
                         }
 
-                        var tResult = curResult.Where(filterExpression).ToList();
+                        if(expList.Count() > 0)
+                        {
+                            Expression finalExpression = expList[0];
+                            for (int e = 0; e < expList.Count() - 1; e++)
+                            {
+                                finalExpression = Expression.AndAlso(expList[e], expList[e + 1]);
+                            }
 
-                        //foreach (var e in exp)
-                        //{
-                        //    e.A
-                        //}
-                        //curResult = curResult.Where(isTeenAger);
-
-                        curResult = curResult.ToList();
-
-                        //var personP = Expression.Parameter(typeof(Dictionary<string, object>), "xy");
-                        //var anyMethodInfo = typeof(Enumerable).GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)
-                        //.Where(m => m.Name == "Any" && m.IsGenericMethod) // Search for Any methods...
-                        //.Select(m => new
-                        //{
-                        //    Method = m,
-                        //    Params = m.GetParameters(),
-                        //    Args = m.GetGenericArguments()
-                        //})
-                        //.Where(x => x.Args.Length == 1
-                        //    && x.Params.Length == 2
-                        //    && x.Params[0].ParameterType == typeof(IEnumerable<>).MakeGenericType(x.Args)
-                        //    && x.Params[1].ParameterType == typeof(Func<,>).MakeGenericType(new Type[] { x.Args.First(), typeof(bool) })) // Get the one defined as Any<TSource>(IEnumerable<TSource>, Func<TSource, bool>)
-                        //.Select(x => x.Method)
-                        //.First();
-                        
-                       
-                        //var ValueProp = Expression.Property(keyValuePairP, "Value");                         // Creates x.Value
-                        //var valueComparisonValue = Expression.Constant("name 0");                           // Creates the value that will be compared to x.Value
-                        //var valueComparison = Expression.Equal(ValueProp, valueComparisonValue);             // Creates the comparison (x.Value == "Madurai")
-
-                        //var anyPredicate = Expression.Lambda(keyComparison, keyValuePairP); // Creates x => x.Key == "PlaceOfBirth" && x.Value == "Madurai"
-
-                        ////anyPredicate(curResult);
-                        //var filterMeMethod = Expression.Lambda<Func<Dictionary<string, object>, bool>>
-                        //    (Expression.Call(anyMethodInfo.MakeGenericMethod(new Type[] { typeof(Dictionary<string, object>) })
-                        //                    , new Expression[] { anyPredicate })
-                        //     , personP);  //Creates xy => xy.SecQuestions.Any(x => x.Key == "PlaceOfBirth" && x.Value == "Madurai")
-
-                        //var r1 = filterMeMethod.Compile()(curResult.First());
+                            filterExpression = Expression.Lambda<Func<Dictionary<string, object>, bool>>(finalExpression, parameter).Compile();
+                            curResult = curResult.Where(filterExpression).ToList();
+                        }                       
                     }
                 }
 
@@ -623,7 +495,7 @@ namespace ColumnStore
                     }
                     nextResult = nextResult.ToList();
 
-                    if (isFilterinCurTable)
+                    if (isFilterinCurTable || (nextFilters.Count() >0 && isPrevFilterApplied))
                     {
                         //inner join
                         result = curResult.InnerJoin(
